@@ -24,11 +24,7 @@ export class LarkCIClient {
       });
     } catch (err) {
       const cause =
-        err instanceof TypeError && err.cause instanceof Error
-          ? err.cause.message
-          : err instanceof Error
-            ? err.message
-            : String(err);
+        err instanceof Error ? err.message : String(err);
       throw new Error(
         `Could not connect to ${this.baseUrl} (${cause}). Is the API running? Check your LARKCI_API_URL setting.`
       );

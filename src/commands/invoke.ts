@@ -2,8 +2,11 @@ import type { Command } from "commander";
 import { LarkCIClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
-export function registerInvokeCommand(program: Command): void {
-  program
+export function registerInvokeCommand(
+  workflows: Command,
+  program: Command
+): void {
+  workflows
     .command("invoke")
     .description("Invoke a workflow and start a new execution")
     .argument("<workflow_id>", "The ID of the workflow to invoke")

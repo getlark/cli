@@ -2,12 +2,15 @@ import type { Command } from "commander";
 import { LarkCIClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
-export function registerExecutionCommand(program: Command): void {
-  const execution = program
-    .command("execution")
+export function registerExecutionCommand(
+  workflows: Command,
+  program: Command
+): void {
+  const executions = workflows
+    .command("executions")
     .description("Manage workflow executions");
 
-  execution
+  executions
     .command("get")
     .description("Get details of a specific workflow execution")
     .argument("<workflow_id>", "The ID of the workflow")
