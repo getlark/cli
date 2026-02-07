@@ -2,55 +2,43 @@
 
 Command-line interface for invoking and managing LarkCI testing workflows.
 
-## Prerequisites
+## Installation
 
-- Node.js >= 18
-- A LarkCI API key
-
-## Setup
+Requires Node.js >= 18.
 
 ```bash
-npm install
+npm install -g larkci
 ```
 
-Create a `.env` file in the project root (or export the variables in your shell):
-
-```
-LARKCI_API_KEY=your-api-key
-```
-
-## Build
+Or run directly without installing:
 
 ```bash
-npm run build
+npx larkci <command>
 ```
 
-This compiles TypeScript from `src/` into `dist/`.
+## Configuration
+
+Set your API key as an environment variable:
+
+```bash
+export LARKCI_API_KEY=your-api-key
+```
+
+Alternatively, pass it inline with the `--api-key` flag (see [Global Options](#global-options)).
 
 ## Usage
 
-You can run the CLI in two ways:
-
-**Development (no build step needed):**
-
 ```bash
-npm run dev -- workflows <subcommand>
+larkci [options] <command>
 ```
 
-**Production (after building):**
-
-```bash
-node dist/index.js workflows <subcommand>
-# or, if linked globally:
-larkci workflows <subcommand>
-```
-
-### Global options
+### Global Options
 
 | Flag | Description |
 |---|---|
 | `--api-key <key>` | API key (overrides `LARKCI_API_KEY` env var) |
-| `--api-url <url>` | API base URL (overrides `LARKCI_API_URL` env var) |
+| `-V, --version` | Display the current version |
+| `-h, --help` | Display help |
 
 ### Commands
 
@@ -82,3 +70,11 @@ larkci workflows executions get wf_abc123 exec_xyz789
 # Override API key inline
 larkci --api-key sk-test-key workflows invoke wf_abc123
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+ISC

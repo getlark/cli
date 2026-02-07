@@ -1,5 +1,5 @@
 {
-  "name": "larkci-cli",
+  "name": "larkci",
   "version": "0.1.0",
   "description": "LarkCI CLI - Invoke testing workflows and manage test executions",
   "license": "ISC",
@@ -9,11 +9,25 @@
   "bin": {
     "larkci": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "larkci",
+    "cli",
+    "testing",
+    "ci"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "commander": "^13.1.0",
