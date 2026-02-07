@@ -1,6 +1,19 @@
 import type { Config } from "../config.js";
 import type { WorkflowExecutionResource } from "./types.js";
 
+export class TimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TimeoutError";
+  }
+}
+
+export interface PollOptions {
+  timeoutMs: number;
+  pollIntervalMs: number;
+  onPoll?: (execution: WorkflowExecutionResource, elapsedMs: number) => void;
+}
+
 export class LarkCIClient {
   private baseUrl: string;
   private apiKey: string;
@@ -63,5 +76,39 @@ export class LarkCIClient {
       "GET",
       `/workflows/${workflowId}/executions/${executionId}`
     );
+  }
+
+  async pollWorkflowExecution(
+    workflowId: string,
+    executionId: string,
+    options: PollOptions
+  ): Promise<WorkflowExecutionResource> {
+    const { timeoutMs, pollIntervalMs, onPoll } = options;
+    const startTime = Date.now();
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+    while (true) {
+      const execution = await this.getWorkflowExecution(
+        workflowId,
+        executionId
+      );
+      const elapsedMs = Date.now() - startTime;
+
+      onPoll?.(execution, elapsedMs);
+
+      if (execution.status === "success" || execution.status === "failure") {
+        return execution;
+      }
+
+      if (elapsedMs >= timeoutMs) {
+        throw new TimeoutError(
+          `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for execution ${executionId} to complete (last status: ${execution.status})`
+        );
+      }
+
+      await sleep(pollIntervalMs);
+    }
   }
 }
