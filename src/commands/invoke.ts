@@ -50,14 +50,31 @@ export function registerInvokeCommand(
 
         console.error(`Waiting for execution ${execution.id} (timeout: ${timeoutSeconds}s)...`);
 
+        let logOffset = 0;
+
         const finalExecution = await client.pollWorkflowExecution(
           workflowId,
           execution.id,
           {
             timeoutMs: timeoutSeconds * 1000,
             pollIntervalMs: POLL_INTERVAL_MS,
-            onPoll: (exec, elapsedMs) => {
+            onPoll: async (exec, elapsedMs) => {
               console.error(`  Status: ${exec.status} (${formatElapsed(elapsedMs)} elapsed)`);
+
+              try {
+                const logs = await client.getWorkflowExecutionLogs(
+                  workflowId,
+                  execution.id
+                );
+                if (logs.length > logOffset) {
+                  for (const line of logs.slice(logOffset)) {
+                    console.error(`  Log: ${line}`);
+                  }
+                  logOffset = logs.length;
+                }
+              } catch {
+                // Logs may not be available yet (e.g. execution is still pending)
+              }
             },
           }
         );

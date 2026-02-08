@@ -11,7 +11,7 @@ export class TimeoutError extends Error {
 export interface PollOptions {
   timeoutMs: number;
   pollIntervalMs: number;
-  onPoll?: (execution: WorkflowExecutionResource, elapsedMs: number) => void;
+  onPoll?: (execution: WorkflowExecutionResource, elapsedMs: number) => void | Promise<void>;
 }
 
 export class LarkCIClient {
@@ -106,7 +106,7 @@ export class LarkCIClient {
       );
       const elapsedMs = Date.now() - startTime;
 
-      onPoll?.(execution, elapsedMs);
+      await onPoll?.(execution, elapsedMs);
 
       if (execution.status === "success" || execution.status === "failure") {
         return execution;
