@@ -23,18 +23,22 @@ export class LarkCIClient {
     this.apiKey = config.apiKey;
   }
 
-  private async request<T>(method: string, path: string): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const url = `${this.baseUrl}${path}`;
+
+    const headers: Record<string, string> = {
+      "X-API-Key": this.apiKey,
+    };
+    const init: RequestInit = { method, headers };
+
+    if (body !== undefined) {
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(body);
+    }
 
     let response: Response;
     try {
-      response = await fetch(url, {
-        method,
-        headers: {
-          "X-API-Key": this.apiKey,
-          "Content-Type": "application/json",
-        },
-      });
+      response = await fetch(url, init);
     } catch (err) {
       const cause =
         err instanceof Error ? err.message : String(err);
@@ -49,6 +53,11 @@ export class LarkCIClient {
         const body = (await response.json()) as Record<string, unknown>;
         if (typeof body.detail === "string") {
           message = `${message}: ${body.detail}`;
+        } else if (Array.isArray(body.detail)) {
+          const details = (body.detail as Array<{ msg?: string; loc?: unknown[] }>)
+            .map((e) => e.msg ?? JSON.stringify(e))
+            .join("; ");
+          message = `${message}: ${details}`;
         }
       } catch {
         // response body was not JSON, use the default message
@@ -64,7 +73,8 @@ export class LarkCIClient {
   ): Promise<WorkflowExecutionResource> {
     return this.request<WorkflowExecutionResource>(
       "POST",
-      `/workflows/${workflowId}/invoke`
+      `/workflows/${workflowId}/invoke`,
+      {}
     );
   }
 
