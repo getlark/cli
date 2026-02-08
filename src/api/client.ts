@@ -78,6 +78,16 @@ export class LarkCIClient {
     );
   }
 
+  async getWorkflowExecutionLogs(
+    workflowId: string,
+    executionId: string
+  ): Promise<string[]> {
+    return this.request<string[]>(
+      "GET",
+      `/workflows/${workflowId}/executions/${executionId}/logs`
+    );
+  }
+
   async pollWorkflowExecution(
     workflowId: string,
     executionId: string,

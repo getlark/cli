@@ -36,4 +36,33 @@ export function registerExecutionCommand(
         process.exit(1);
       }
     });
+
+  executions
+    .command("logs")
+    .description("Get logs for a specific workflow execution")
+    .argument("<workflow_id>", "The ID of the workflow")
+    .argument("<execution_id>", "The ID of the execution")
+    .action(async (workflowId: string, executionId: string) => {
+      const opts = program.opts();
+      const config = getConfig({
+        apiKey: opts.apiKey,
+        apiUrl: opts.apiUrl,
+      });
+      const client = new LarkCIClient(config);
+
+      try {
+        const logs = await client.getWorkflowExecutionLogs(
+          workflowId,
+          executionId
+        );
+        for (const line of logs) {
+          console.log(line);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : String(error);
+        console.error(`Error: ${message}`);
+        process.exit(1);
+      }
+    });
 }

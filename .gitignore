@@ -20,3 +20,6 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# LARK OpenAPI specification
+larkci_openapi.json
