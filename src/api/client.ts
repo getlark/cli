@@ -51,14 +51,7 @@ export class LarkCIClient {
       let message = `HTTP ${response.status} ${response.statusText}`;
       try {
         const body = (await response.json()) as Record<string, unknown>;
-        if (typeof body.detail === "string") {
-          message = `${message}: ${body.detail}`;
-        } else if (Array.isArray(body.detail)) {
-          const details = (body.detail as Array<{ msg?: string; loc?: unknown[] }>)
-            .map((e) => e.msg ?? JSON.stringify(e))
-            .join("; ");
-          message = `${message}: ${details}`;
-        }
+        message = `${message}, body: ${JSON.stringify(body)}`        
       } catch {
         // response body was not JSON, use the default message
       }
