@@ -1,5 +1,5 @@
 import type { Config } from "../config.js";
-import type { WorkflowExecutionResource } from "./types.js";
+import type { WorkflowExecutionResource, WorkflowResource } from "./types.js";
 
 export class TimeoutError extends Error {
   constructor(message: string) {
@@ -11,7 +11,10 @@ export class TimeoutError extends Error {
 export interface PollOptions {
   timeoutMs: number;
   pollIntervalMs: number;
-  onPoll?: (execution: WorkflowExecutionResource, elapsedMs: number) => void | Promise<void>;
+  onPoll?: (
+    execution: WorkflowExecutionResource,
+    elapsedMs: number,
+  ) => void | Promise<void>;
 }
 
 export class LarkCIClient {
@@ -23,7 +26,11 @@ export class LarkCIClient {
     this.apiKey = config.apiKey;
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
 
     const headers: Record<string, string> = {
@@ -40,10 +47,9 @@ export class LarkCIClient {
     try {
       response = await fetch(url, init);
     } catch (err) {
-      const cause =
-        err instanceof Error ? err.message : String(err);
+      const cause = err instanceof Error ? err.message : String(err);
       throw new Error(
-        `Could not connect to ${this.baseUrl} (${cause}). Is the API running? Check your LARKCI_API_URL setting.`
+        `Could not connect to ${this.baseUrl} (${cause}). Is the API running? Check your LARKCI_API_URL setting.`,
       );
     }
 
@@ -51,7 +57,7 @@ export class LarkCIClient {
       let message = `HTTP ${response.status} ${response.statusText}`;
       try {
         const body = (await response.json()) as Record<string, unknown>;
-        message = `${message}, body: ${JSON.stringify(body)}`        
+        message = `${message}, body: ${JSON.stringify(body)}`;
       } catch {
         // response body was not JSON, use the default message
       }
@@ -61,40 +67,46 @@ export class LarkCIClient {
     return (await response.json()) as T;
   }
 
-  async invokeWorkflow(
-    workflowId: string
-  ): Promise<WorkflowExecutionResource> {
+  async invokeWorkflow(workflowId: string): Promise<WorkflowExecutionResource> {
     return this.request<WorkflowExecutionResource>(
       "POST",
       `/workflows/${workflowId}/invoke`,
-      {}
+      {},
     );
+  }
+
+  async listWorkflows(): Promise<WorkflowResource[]> {
+    const response = await this.request<{ workflows: WorkflowResource[] }>(
+      "GET",
+      "/workflows",
+    );
+    return response.workflows;
   }
 
   async getWorkflowExecution(
     workflowId: string,
-    executionId: string
+    executionId: string,
   ): Promise<WorkflowExecutionResource> {
     return this.request<WorkflowExecutionResource>(
       "GET",
-      `/workflows/${workflowId}/executions/${executionId}`
+      `/workflows/${workflowId}/executions/${executionId}`,
     );
   }
 
   async getWorkflowExecutionLogs(
     workflowId: string,
-    executionId: string
+    executionId: string,
   ): Promise<string[]> {
     return this.request<string[]>(
       "GET",
-      `/workflows/${workflowId}/executions/${executionId}/logs`
+      `/workflows/${workflowId}/executions/${executionId}/logs`,
     );
   }
 
   async pollWorkflowExecution(
     workflowId: string,
     executionId: string,
-    options: PollOptions
+    options: PollOptions,
   ): Promise<WorkflowExecutionResource> {
     const { timeoutMs, pollIntervalMs, onPoll } = options;
     const startTime = Date.now();
@@ -105,7 +117,7 @@ export class LarkCIClient {
     while (true) {
       const execution = await this.getWorkflowExecution(
         workflowId,
-        executionId
+        executionId,
       );
       const elapsedMs = Date.now() - startTime;
 
@@ -117,7 +129,7 @@ export class LarkCIClient {
 
       if (elapsedMs >= timeoutMs) {
         throw new TimeoutError(
-          `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for execution ${executionId} to complete (last status: ${execution.status})`
+          `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for execution ${executionId} to complete (last status: ${execution.status})`,
         );
       }
 

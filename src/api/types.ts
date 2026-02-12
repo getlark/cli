@@ -1,3 +1,12 @@
+export interface WorkflowResource {
+  id: string;
+  name: string;
+  description: string;
+  archived_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface WorkflowExecutionStepResource {
   step: string;
   result: boolean;
