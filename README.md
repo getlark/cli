@@ -2,18 +2,20 @@
 
 Command-line interface for invoking and managing LarkCI testing workflows.
 
-## Installation
+## Quickstart
 
 Requires Node.js >= 18.
 
 ```bash
-npm install -g larkci
+npx -y larkci@latest workflows invoke --all --wait
 ```
 
-Or run directly without installing:
+Or install globally:
 
 ```bash
-npx larkci <command>
+npm install -g larkci@latest
+
+larkci workflows invoke --all --wait
 ```
 
 ## Configuration
@@ -34,28 +36,33 @@ larkci [options] <command>
 
 ### Global Options
 
-| Flag | Description |
-|---|---|
+| Flag              | Description                                  |
+| ----------------- | -------------------------------------------- |
 | `--api-key <key>` | API key (overrides `LARKCI_API_KEY` env var) |
-| `-V, --version` | Display the current version |
-| `-h, --help` | Display help |
+| `-V, --version`   | Display the current version                  |
+| `-h, --help`      | Display help                                 |
 
 ### Commands
 
-#### Invoke a workflow
-
-Start a new execution for a workflow:
+#### Invoke workflows
 
 ```bash
-larkci workflows invoke <workflow_id>
+# Invoke all workflows and wait (up to 5 minutes) for completion
+larkci workflows invoke --all --wait --timeout 300
+
+# Invoke specific workflows and wait (up to 5 minutes) for completion
+larkci workflows invoke --workflow-ids wf_abc123 wf_def456 wf_ghi789 --wait --timeout 300
 ```
 
-| Flag | Description |
-|---|---|
-| `--wait` | Wait for the execution to reach a terminal status before exiting |
-| `--timeout <seconds>` | Maximum time to wait in seconds (default: 600, requires `--wait`) |
+| Flag                     | Description                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `--workflow-ids <id...>` | The IDs of the workflow to invoke                                                |
+| `--all`                  | Invoke all workflows                                                             |
+| `--wait`                 | Wait for the execution to finish (successfully or unsuccessfully) before exiting |
+| `--timeout <seconds>`    | Maximum time to wait in seconds (default: 600, requires `--wait`)                |
+| `--verbose`              | Print verbose output (includes logs)                                             |
 
-When `--wait` is used, progress updates are printed to stderr and the final execution JSON is printed to stdout. Exit codes: `0` = success, `1` = workflow failure, `2` = timeout, `3` = unexpected error.
+Exit codes: `0` = success, `1` = workflow failure, `2` = timeout, `3` = unexpected error.
 
 #### Get a workflow execution
 
@@ -76,13 +83,13 @@ larkci workflows executions logs <workflow_id> <execution_id>
 ### Examples
 
 ```bash
-# Invoke a workflow
+# Invoke a workflow but don't wait for completion
 larkci workflows invoke wf_abc123
 
 # Invoke and wait for completion (10 min default timeout)
 larkci workflows invoke wf_abc123 --wait
 
-# Invoke and wait with a custom timeout of 5 minutes
+# Invoke and wait (up to 5 minutes) for completion
 larkci workflows invoke wf_abc123 --wait --timeout 300
 
 # Check execution status
@@ -95,16 +102,35 @@ larkci workflows executions logs wf_abc123 exec_xyz789
 larkci --api-key sk-test-key workflows invoke wf_abc123
 ```
 
-### CI Pipeline Usage
+## CI Pipeline Usage
 
 The `--wait` flag makes it easy to use in CI pipelines. The command will block until the workflow completes and exit with a non-zero code on failure:
 
+### GitHub Actions Example
+
+Be sure to set the `LARKCI_API_KEY` environment variable in GitHub Actions secrets.
+
 ```yaml
-# GitHub Actions example
-- name: Run LarkCI workflow
-  run: larkci workflows invoke ${{ vars.WORKFLOW_ID }} --wait --timeout 300
+- name: Run LarkCI Tests
+  run: npx -y larkci@latest workflows invoke --all --wait
   env:
     LARKCI_API_KEY: ${{ secrets.LARKCI_API_KEY }}
+```
+
+### CircleCI Example
+
+Be sure to set the `LARKCI_API_KEY` environment variable in CircleCI.
+
+```yaml
+larkci_tests:
+  docker:
+    - image: cimg/node:lts
+  resource_class: small
+  steps:
+    - run:
+        name: Run LarkCI Tests
+        command: |
+          npx -y larkci@latest workflows invoke --all --wait
 ```
 
 ## Contributing

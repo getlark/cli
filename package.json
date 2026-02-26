@@ -1,6 +1,6 @@
 {
   "name": "larkci",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "LarkCI CLI - Invoke testing workflows and manage test executions",
   "license": "ISC",
   "author": "",
@@ -20,7 +20,8 @@
     "larkci",
     "cli",
     "testing",
-    "ci"
+    "ci",
+    "e2e-testing"
   ],
   "scripts": {
     "build": "tsc",
