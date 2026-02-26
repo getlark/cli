@@ -20,7 +20,8 @@
     "larkci",
     "cli",
     "testing",
-    "ci"
+    "ci",
+    "e2e-testing"
   ],
   "scripts": {
     "build": "tsc",

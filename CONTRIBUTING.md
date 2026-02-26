@@ -52,12 +52,12 @@ larkci workflows <subcommand>
 
 ## Scripts
 
-| Script | Description |
-|---|---|
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm run dev` | Run the CLI via `tsx` (no build needed) |
-| `npm run start` | Run the built CLI from `dist/` |
-| `npm run typecheck` | Type-check without emitting files |
+| Script              | Description                             |
+| ------------------- | --------------------------------------- |
+| `npm run build`     | Compile TypeScript to `dist/`           |
+| `npm run dev`       | Run the CLI via `tsx` (no build needed) |
+| `npm run start`     | Run the built CLI from `dist/`          |
+| `npm run typecheck` | Type-check without emitting files       |
 
 ## Project Structure
 
@@ -66,8 +66,10 @@ src/
 ├── index.ts          # CLI entry point
 ├── config.ts         # Configuration / env loading
 ├── api/
-│   └── client.ts     # LarkCI API client
+│   ├── client.ts     # LarkCI API client
+│   └── types.ts      # LarkCI API types
 └── commands/
     ├── invoke.ts     # `workflows invoke` command
-    └── execution.ts  # `workflows executions` command
+    ├── execution.ts  # `workflows executions` command
+    └── list-workflows.ts  # `workflows list` command
 ```
