@@ -1,6 +1,6 @@
 {
   "name": "larkci",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "LarkCI CLI - Invoke testing workflows and manage test executions",
   "license": "ISC",
   "author": "",
