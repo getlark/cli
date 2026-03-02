@@ -3,6 +3,7 @@ import type {
   ListWorkflowExecutionsResponse,
   ListWorkflowsResponse,
   WorkflowExecutionResource,
+  WorkflowResource,
 } from "./types.js";
 
 export class TimeoutError extends Error {
@@ -69,6 +70,15 @@ export class LarkCIClient {
     }
 
     return (await response.json()) as T;
+  }
+
+  async createWorkflow(options: {
+    name: string;
+    description: string;
+    secret_contexts?: string[];
+    mode?: "ai_driven" | "deterministic";
+  }): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>("POST", "/workflows", options);
   }
 
   async invokeWorkflow(

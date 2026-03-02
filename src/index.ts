@@ -4,6 +4,7 @@ import { Command, Option } from "commander";
 import { registerInvokeCommand } from "./commands/invoke.js";
 import { registerExecutionCommand } from "./commands/execution.js";
 import { registerListWorkflowsCommand } from "./commands/list-workflows.js";
+import { registerCreateWorkflowCommand } from "./commands/create-workflow.js";
 
 const program = new Command();
 
@@ -24,6 +25,7 @@ program
 const workflows = program.command("workflows").description("Manage workflows");
 
 registerListWorkflowsCommand(workflows, program);
+registerCreateWorkflowCommand(workflows, program);
 registerInvokeCommand(workflows, program);
 registerExecutionCommand(workflows, program);
 
