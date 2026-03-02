@@ -1,5 +1,9 @@
 import type { Config } from "../config.js";
-import type { WorkflowExecutionResource, WorkflowResource } from "./types.js";
+import type {
+  ListWorkflowExecutionsResponse,
+  ListWorkflowsResponse,
+  WorkflowExecutionResource,
+} from "./types.js";
 
 export class TimeoutError extends Error {
   constructor(message: string) {
@@ -67,7 +71,9 @@ export class LarkCIClient {
     return (await response.json()) as T;
   }
 
-  async invokeWorkflow(workflowId: string): Promise<WorkflowExecutionResource> {
+  async invokeWorkflow(
+    workflowId: string,
+  ): Promise<WorkflowExecutionResource> {
     return this.request<WorkflowExecutionResource>(
       "POST",
       `/workflows/${workflowId}/invoke`,
@@ -75,12 +81,34 @@ export class LarkCIClient {
     );
   }
 
-  async listWorkflows(): Promise<WorkflowResource[]> {
-    const response = await this.request<{ workflows: WorkflowResource[] }>(
-      "GET",
-      "/workflows",
-    );
-    return response.workflows;
+  async listWorkflows(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ListWorkflowsResponse> {
+    const params = new URLSearchParams();
+    if (options?.limit !== undefined)
+      params.set("limit", String(options.limit));
+    if (options?.offset !== undefined)
+      params.set("offset", String(options.offset));
+    const query = params.toString();
+    const path = query ? `/workflows?${query}` : "/workflows";
+    return this.request<ListWorkflowsResponse>("GET", path);
+  }
+
+  async listWorkflowExecutions(
+    workflowId: string,
+    options?: { limit?: number; offset?: number },
+  ): Promise<ListWorkflowExecutionsResponse> {
+    const params = new URLSearchParams();
+    if (options?.limit !== undefined)
+      params.set("limit", String(options.limit));
+    if (options?.offset !== undefined)
+      params.set("offset", String(options.offset));
+    const query = params.toString();
+    const path = query
+      ? `/workflows/${workflowId}/executions?${query}`
+      : `/workflows/${workflowId}/executions`;
+    return this.request<ListWorkflowExecutionsResponse>("GET", path);
   }
 
   async getWorkflowExecution(
@@ -103,6 +131,16 @@ export class LarkCIClient {
     );
   }
 
+  async cancelWorkflowExecution(
+    workflowId: string,
+    executionId: string,
+  ): Promise<WorkflowExecutionResource> {
+    return this.request<WorkflowExecutionResource>(
+      "POST",
+      `/workflows/${workflowId}/executions/${executionId}/cancel`,
+    );
+  }
+
   async pollWorkflowExecution(
     workflowId: string,
     executionId: string,
@@ -114,6 +152,8 @@ export class LarkCIClient {
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+    const terminalStatuses = new Set(["success", "failure", "cancelled"]);
+
     while (true) {
       const execution = await this.getWorkflowExecution(
         workflowId,
@@ -123,7 +163,7 @@ export class LarkCIClient {
 
       await onPoll?.(execution, elapsedMs);
 
-      if (execution.status === "success" || execution.status === "failure") {
+      if (terminalStatuses.has(execution.status)) {
         return execution;
       }
 

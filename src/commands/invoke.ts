@@ -118,8 +118,8 @@ export function registerInvokeCommand(
         let workflowIds: string[] = [];
 
         if (cmdOpts.all) {
-          const workflows = await client.listWorkflows();
-          workflowIds = workflows.map((workflow) => workflow.id);
+          const response = await client.listWorkflows();
+          workflowIds = response.workflows.map((workflow) => workflow.id);
         } else if (cmdOpts.workflowIds) {
           workflowIds = cmdOpts.workflowIds;
         } else {
@@ -184,6 +184,7 @@ export function registerInvokeCommand(
           }
 
           const failedWorkflowIds: string[] = [];
+          const cancelledWorkflowIds: string[] = [];
           for (const result of workflowExecutionResults) {
             if (result.status === "fulfilled") {
               if (result.value.status === "success") {
@@ -195,16 +196,31 @@ export function registerInvokeCommand(
                   `Workflow ${result.value.workflow_id} executed with failure. Execution ID: ${result.value.id}. Summary: ${result.value.summary}`,
                 );
                 failedWorkflowIds.push(result.value.workflow_id);
+              } else if (result.value.status === "cancelled") {
+                console.error(
+                  `Workflow ${result.value.workflow_id} was cancelled. Execution ID: ${result.value.id}`,
+                );
+                cancelledWorkflowIds.push(result.value.workflow_id);
               }
             } else {
               console.error(`Error: ${result.reason}`);
             }
           }
 
+          if (cancelledWorkflowIds.length > 0) {
+            console.error(
+              `Workflows cancelled: ${cancelledWorkflowIds.join(", ")}`,
+            );
+          }
+
           if (failedWorkflowIds.length > 0) {
             console.error(
               `Workflows finished with status "failure": ${failedWorkflowIds.join(", ")}`,
             );
+            process.exit(1);
+          }
+
+          if (cancelledWorkflowIds.length > 0) {
             process.exit(1);
           }
 

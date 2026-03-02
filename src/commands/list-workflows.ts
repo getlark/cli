@@ -9,7 +9,9 @@ export function registerListWorkflowsCommand(
   workflows
     .command("list")
     .description("List non-archived workflows")
-    .action(async () => {
+    .option("--limit <number>", "Max number of workflows to return (1-100)", "10")
+    .option("--offset <number>", "Number of workflows to skip", "0")
+    .action(async (cmdOpts: { limit: string; offset: string }) => {
       const opts = program.opts();
       const config = getConfig({
         apiKey: opts.apiKey,
@@ -18,9 +20,20 @@ export function registerListWorkflowsCommand(
       const client = new LarkCIClient(config);
 
       try {
-        let workflows = await client.listWorkflows();
-        workflows = workflows.filter((workflow) => !workflow.archived_at);
-        console.log(JSON.stringify(workflows, null, 2));
+        const response = await client.listWorkflows({
+          limit: parseInt(cmdOpts.limit, 10),
+          offset: parseInt(cmdOpts.offset, 10),
+        });
+        const activeWorkflows = response.workflows.filter(
+          (workflow) => !workflow.archived_at,
+        );
+        console.log(
+          JSON.stringify(
+            { workflows: activeWorkflows, has_more: response.has_more },
+            null,
+            2,
+          ),
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`Error: ${message}`);
