@@ -85,6 +85,20 @@ export class LarkCIClient {
     return this.request<WorkflowResource>("POST", "/workflows", options);
   }
 
+  async archiveWorkflow(workflowId: string): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>(
+      "POST",
+      `/workflows/${workflowId}/archive`,
+    );
+  }
+
+  async unarchiveWorkflow(workflowId: string): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>(
+      "POST",
+      `/workflows/${workflowId}/unarchive`,
+    );
+  }
+
   async invokeWorkflow(
     workflowId: string,
   ): Promise<WorkflowExecutionResource> {

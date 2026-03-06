@@ -68,6 +68,22 @@ larkci workflows create \
   --secret-contexts production staging
 ```
 
+#### `workflows archive` — Archive a workflow
+
+```bash
+larkci workflows archive <workflow_id>
+```
+
+Archived workflows are hidden from the default list and cannot be invoked until unarchived.
+
+#### `workflows unarchive` — Unarchive a workflow
+
+```bash
+larkci workflows unarchive <workflow_id>
+```
+
+Restores an archived workflow so it appears in the list and can be invoked again.
+
 #### `workflows list` — List workflows
 
 ```bash
@@ -182,6 +198,12 @@ larkci workflows create --name "signup-flow" --description "Test user signup"
 
 # List your workflows
 larkci workflows list --limit 20
+
+# Archive a workflow
+larkci workflows archive wf_abc123
+
+# Unarchive a workflow
+larkci workflows unarchive wf_abc123
 
 # Invoke a workflow but don't wait for completion
 larkci workflows invoke --workflow-ids wf_abc123
