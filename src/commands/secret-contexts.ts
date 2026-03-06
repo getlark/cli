@@ -104,4 +104,27 @@ export function registerSecretContextsCommand(
         }
       },
     );
+
+  secrets
+    .command("delete")
+    .description("Delete a secret context")
+    .argument("<context>", "The name of the secret context to delete")
+    .action(async (context: string) => {
+      const opts = program.opts();
+      const config = getConfig({
+        apiKey: opts.apiKey,
+        apiUrl: opts.apiUrl,
+      });
+      const client = new LarkCIClient(config);
+
+      try {
+        await client.deleteSecretContext(context);
+        console.log(`Secret context "${context}" deleted successfully.`);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : String(error);
+        console.error(`Error: ${message}`);
+        process.exit(1);
+      }
+    });
 }

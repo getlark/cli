@@ -166,6 +166,14 @@ larkci secret-contexts create \
   --secret password=testpass
 ```
 
+#### `secret-contexts delete` — Delete a secret context
+
+```bash
+larkci secret-contexts delete <context>
+```
+
+Permanently deletes a secret context. Workflows referencing it will no longer have access.
+
 ### Examples
 
 ```bash
@@ -207,6 +215,9 @@ larkci secret-contexts list
 
 # View the keys stored in a secret context
 larkci secret-contexts get production
+
+# Delete a secret context
+larkci secret-contexts delete production
 ```
 
 ## CI Pipeline Usage

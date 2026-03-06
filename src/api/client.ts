@@ -175,6 +175,13 @@ export class LarkCIClient {
     await this.request<unknown>("POST", "/secret-contexts", options);
   }
 
+  async deleteSecretContext(context: string): Promise<void> {
+    await this.request<unknown>(
+      "DELETE",
+      `/secret-contexts/${encodeURIComponent(context)}`,
+    );
+  }
+
   async pollWorkflowExecution(
     workflowId: string,
     executionId: string,
