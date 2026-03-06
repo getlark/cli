@@ -1,5 +1,7 @@
 import type { Config } from "../config.js";
 import type {
+  GetSecretContextResponse,
+  ListSecretContextsResponse,
   ListWorkflowExecutionsResponse,
   ListWorkflowsResponse,
   WorkflowExecutionResource,
@@ -69,7 +71,9 @@ export class LarkCIClient {
       throw new Error(message);
     }
 
-    return (await response.json()) as T;
+    const text = await response.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
   }
 
   async createWorkflow(options: {
@@ -149,6 +153,26 @@ export class LarkCIClient {
       "POST",
       `/workflows/${workflowId}/executions/${executionId}/cancel`,
     );
+  }
+
+  async listSecretContexts(): Promise<ListSecretContextsResponse> {
+    return this.request<ListSecretContextsResponse>("GET", "/secret-contexts");
+  }
+
+  async getSecretContext(
+    context: string,
+  ): Promise<GetSecretContextResponse> {
+    return this.request<GetSecretContextResponse>(
+      "GET",
+      `/secret-contexts/${encodeURIComponent(context)}`,
+    );
+  }
+
+  async createSecretContext(options: {
+    context: string;
+    value: Record<string, string>;
+  }): Promise<void> {
+    await this.request<unknown>("POST", "/secret-contexts", options);
   }
 
   async pollWorkflowExecution(

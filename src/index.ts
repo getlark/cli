@@ -5,6 +5,7 @@ import { registerInvokeCommand } from "./commands/invoke.js";
 import { registerExecutionCommand } from "./commands/execution.js";
 import { registerListWorkflowsCommand } from "./commands/list-workflows.js";
 import { registerCreateWorkflowCommand } from "./commands/create-workflow.js";
+import { registerSecretContextsCommand } from "./commands/secret-contexts.js";
 
 const program = new Command();
 
@@ -28,5 +29,7 @@ registerListWorkflowsCommand(workflows, program);
 registerCreateWorkflowCommand(workflows, program);
 registerInvokeCommand(workflows, program);
 registerExecutionCommand(workflows, program);
+
+registerSecretContextsCommand(program);
 
 program.parse();

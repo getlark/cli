@@ -130,6 +130,42 @@ larkci workflows executions logs <workflow_id> <execution_id>
 larkci workflows executions cancel <workflow_id> <execution_id>
 ```
 
+#### `secret-contexts list` — List secret contexts
+
+```bash
+larkci secret-contexts list
+```
+
+Returns all secret context names and metadata for your account. Does not return secret values.
+
+#### `secret-contexts get` — Get a secret context
+
+```bash
+larkci secret-contexts get <context>
+```
+
+Returns the context name and the list of key names stored in it. Does not return secret values.
+
+#### `secret-contexts create` — Create or replace a secret context
+
+```bash
+larkci secret-contexts create --context production --secret username=admin --secret password=s3cret
+```
+
+| Flag                        | Required | Description                                        |
+| --------------------------- | -------- | -------------------------------------------------- |
+| `--context <name>`          | Yes      | Name of the secret context                         |
+| `--secret <key=value>`      | Yes      | Secret key-value pair (repeat for multiple values) |
+
+```bash
+# Create a secret context with multiple credentials
+larkci secret-contexts create \
+  --context staging \
+  --secret api_key=sk_test_abc123 \
+  --secret username=testuser \
+  --secret password=testpass
+```
+
 ### Examples
 
 ```bash
@@ -162,6 +198,15 @@ larkci workflows executions cancel wf_abc123 exec_xyz789
 
 # Override API key inline
 larkci --api-key sk-test-key workflows invoke --workflow-ids wf_abc123
+
+# Store credentials for a secret context
+larkci secret-contexts create --context production --secret username=admin --secret password=s3cret
+
+# List all secret contexts
+larkci secret-contexts list
+
+# View the keys stored in a secret context
+larkci secret-contexts get production
 ```
 
 ## CI Pipeline Usage

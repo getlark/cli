@@ -90,3 +90,19 @@ export interface ListWorkflowExecutionsResponse {
 export interface ApiErrorResponse {
   detail: string;
 }
+
+export interface SecretContextResource {
+  context: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListSecretContextsResponse {
+  secret_contexts: SecretContextResource[];
+  has_more: boolean;
+}
+
+export interface GetSecretContextResponse {
+  context: string;
+  keys: string[];
+}
