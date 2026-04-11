@@ -106,6 +106,42 @@ export function registerSecretContextsCommand(
     );
 
   secrets
+    .command("update")
+    .description("Update or add a key-value pair in an existing secret context")
+    .argument("<context>", "The name of the secret context")
+    .requiredOption("--key <key>", "The key to create or update")
+    .requiredOption("--value <value>", "The new value for the key")
+    .action(
+      async (
+        context: string,
+        cmdOpts: { key: string; value: string },
+      ) => {
+        const opts = program.opts();
+        const config = getConfig({
+          apiKey: opts.apiKey,
+          apiUrl: opts.apiUrl,
+        });
+        const client = new LarkCIClient(config);
+
+        try {
+          await client.updateSecretContext(
+            context,
+            cmdOpts.key,
+            cmdOpts.value,
+          );
+          console.log(
+            `Secret context "${context}" key "${cmdOpts.key}" updated successfully.`,
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          console.error(`Error: ${message}`);
+          process.exit(1);
+        }
+      },
+    );
+
+  secrets
     .command("delete")
     .description("Delete a secret context")
     .argument("<context>", "The name of the secret context to delete")
@@ -120,6 +156,32 @@ export function registerSecretContextsCommand(
       try {
         await client.deleteSecretContext(context);
         console.log(`Secret context "${context}" deleted successfully.`);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : String(error);
+        console.error(`Error: ${message}`);
+        process.exit(1);
+      }
+    });
+
+  secrets
+    .command("delete-key")
+    .description("Delete a single key from a secret context")
+    .argument("<context>", "The name of the secret context")
+    .argument("<key>", "The key to delete")
+    .action(async (context: string, key: string) => {
+      const opts = program.opts();
+      const config = getConfig({
+        apiKey: opts.apiKey,
+        apiUrl: opts.apiUrl,
+      });
+      const client = new LarkCIClient(config);
+
+      try {
+        await client.deleteSecretContextKey(context, key);
+        console.log(
+          `Key "${key}" deleted from secret context "${context}" successfully.`,
+        );
       } catch (error) {
         const message =
           error instanceof Error ? error.message : String(error);

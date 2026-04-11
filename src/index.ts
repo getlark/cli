@@ -5,8 +5,14 @@ import { registerInvokeCommand } from "./commands/invoke.js";
 import { registerExecutionCommand } from "./commands/execution.js";
 import { registerListWorkflowsCommand } from "./commands/list-workflows.js";
 import { registerCreateWorkflowCommand } from "./commands/create-workflow.js";
+import { registerGetWorkflowCommand } from "./commands/get-workflow.js";
+import { registerUpdateWorkflowCommand } from "./commands/update-workflow.js";
 import { registerArchiveWorkflowCommands } from "./commands/archive-workflow.js";
+import { registerRepairsCommand } from "./commands/repairs.js";
+import { registerGenerationsCommand } from "./commands/generations.js";
+import { registerEventsCommand } from "./commands/events.js";
 import { registerSecretContextsCommand } from "./commands/secret-contexts.js";
+import { registerWorkflowGroupsCommand } from "./commands/workflow-groups.js";
 
 const program = new Command();
 
@@ -27,11 +33,17 @@ program
 const workflows = program.command("workflows").description("Manage workflows");
 
 registerListWorkflowsCommand(workflows, program);
+registerGetWorkflowCommand(workflows, program);
 registerCreateWorkflowCommand(workflows, program);
+registerUpdateWorkflowCommand(workflows, program);
 registerArchiveWorkflowCommands(workflows, program);
 registerInvokeCommand(workflows, program);
 registerExecutionCommand(workflows, program);
+registerRepairsCommand(workflows, program);
+registerGenerationsCommand(workflows, program);
+registerEventsCommand(workflows, program);
 
 registerSecretContextsCommand(program);
+registerWorkflowGroupsCommand(program);
 
 program.parse();

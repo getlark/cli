@@ -8,10 +8,15 @@ export interface WorkflowResource {
   name: string;
   status:
     | "active"
+    | "pending_generation"
     | "generating"
     | "generation_successful"
     | "generation_failed"
-    | "archived";
+    | "archived"
+    | "needs_repair"
+    | "repairing"
+    | "repair_successful"
+    | "repair_failed";
   description: string;
   secret_contexts: string[] | null;
   mode: "ai_driven" | "deterministic";
@@ -19,7 +24,18 @@ export interface WorkflowResource {
   last_execution_id: string | null;
   last_execution_started_at: string | null;
   last_execution_stopped_at: string | null;
-  last_execution_result_type: "success" | "failure" | null;
+  last_execution_result_type: "success" | "failure" | "cancelled" | null;
+  last_generation_id: string | null;
+  last_generation_started_at: string | null;
+  last_generation_stopped_at: string | null;
+  last_generation_result_type: "success" | "failure" | "cancelled" | null;
+  last_repair_id: string | null;
+  last_repair_started_at: string | null;
+  last_repair_stopped_at: string | null;
+  last_repair_result_type: "success" | "failure" | "cancelled" | null;
+  schedule: string | null;
+  group_id: string | null;
+  next_execution_at: string | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -41,7 +57,7 @@ export interface WorkflowExecutionStepResource {
   friction_points: FrictionPointInterface[] | null;
 }
 
-export interface WorkflowExecutionArtifactResource {
+export interface WorkflowArtifactResource {
   artifact_type:
     | "screenshot"
     | "video"
@@ -60,31 +76,13 @@ export interface WorkflowExecutionResource {
   workflow_id: string;
   status: "pending" | "running" | "success" | "failure" | "cancelled";
   type: string | null;
-  artifacts: WorkflowExecutionArtifactResource[];
+  artifacts: WorkflowArtifactResource[];
   steps: WorkflowExecutionStepResource[] | null;
   summary: string | null;
   started_at: string | null;
   stopped_at: string | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface ListedWorkflowExecutionResource {
-  id: string;
-  workflow_id: string;
-  status: "pending" | "running" | "success" | "failure" | "cancelled";
-  type: string | null;
-  steps: WorkflowExecutionStepResource[] | null;
-  summary: string | null;
-  started_at: string | null;
-  stopped_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ListWorkflowExecutionsResponse {
-  workflow_executions: ListedWorkflowExecutionResource[];
-  has_more: boolean;
 }
 
 export interface ApiErrorResponse {
@@ -105,4 +103,73 @@ export interface ListSecretContextsResponse {
 export interface GetSecretContextResponse {
   context: string;
   keys: string[];
+}
+
+export interface WorkflowGenerationResource {
+  id: string;
+  workflow_id: string;
+  status: "pending" | "running" | "success" | "failure" | "cancelled";
+  started_at: string | null;
+  stopped_at: string | null;
+  secret_contexts: string[] | null;
+  artifacts: WorkflowArtifactResource[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkflowRepairResource {
+  id: string;
+  workflow_id: string;
+  status: "pending" | "running" | "success" | "failure" | "cancelled";
+  started_at: string | null;
+  stopped_at: string | null;
+  summary: string | null;
+  secret_contexts: string[] | null;
+  artifacts: WorkflowArtifactResource[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListedWorkflowRepairResource {
+  id: string;
+  workflow_id: string;
+  status: "pending" | "running" | "success" | "failure" | "cancelled";
+  started_at: string | null;
+  stopped_at: string | null;
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListWorkflowRepairsResponse {
+  workflow_repairs: ListedWorkflowRepairResource[];
+  has_more: boolean;
+}
+
+export interface ListedWorkflowEventResource {
+  id: string;
+  workflow_id: string;
+  event_type: "generation" | "execution" | "repair";
+  status: "pending" | "running" | "success" | "failure" | "cancelled";
+  started_at: string | null;
+  stopped_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListWorkflowEventsResponse {
+  workflow_events: ListedWorkflowEventResource[];
+  has_more: boolean;
+}
+
+export interface WorkflowGroupResource {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListWorkflowGroupsResponse {
+  workflow_groups: WorkflowGroupResource[];
+  has_more: boolean;
 }

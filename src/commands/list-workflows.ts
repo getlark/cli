@@ -11,7 +11,8 @@ export function registerListWorkflowsCommand(
     .description("List non-archived workflows")
     .option("--limit <number>", "Max number of workflows to return (1-100)", "10")
     .option("--offset <number>", "Number of workflows to skip", "0")
-    .action(async (cmdOpts: { limit: string; offset: string }) => {
+    .option("--group-id <groupId>", "Filter workflows by group ID")
+    .action(async (cmdOpts: { limit: string; offset: string; groupId?: string }) => {
       const opts = program.opts();
       const config = getConfig({
         apiKey: opts.apiKey,
@@ -23,6 +24,7 @@ export function registerListWorkflowsCommand(
         const response = await client.listWorkflows({
           limit: parseInt(cmdOpts.limit, 10),
           offset: parseInt(cmdOpts.offset, 10),
+          group_id: cmdOpts.groupId,
         });
         const activeWorkflows = response.workflows.filter(
           (workflow) => !workflow.archived_at,

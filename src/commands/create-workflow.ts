@@ -20,12 +20,14 @@ export function registerCreateWorkflowCommand(
       "--secret-contexts <contexts...>",
       "Secret contexts to attach to the workflow",
     )
+    .option("--group-id <groupId>", "Workflow group ID to assign this workflow to")
     .action(
       async (cmdOpts: {
         name: string;
         description: string;
         mode: "ai_driven" | "deterministic";
         secretContexts?: string[];
+        groupId?: string;
       }) => {
         const opts = program.opts();
         const config = getConfig({
@@ -40,6 +42,7 @@ export function registerCreateWorkflowCommand(
             description: cmdOpts.description,
             mode: cmdOpts.mode,
             secret_contexts: cmdOpts.secretContexts,
+            group_id: cmdOpts.groupId,
           });
           console.log(JSON.stringify(workflow, null, 2));
         } catch (error) {
