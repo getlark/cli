@@ -68,6 +68,22 @@ larkci workflows create \
   --secret-contexts production staging
 ```
 
+#### `workflows archive` — Archive a workflow
+
+```bash
+larkci workflows archive <workflow_id>
+```
+
+Archived workflows are hidden from the default list and cannot be invoked until unarchived.
+
+#### `workflows unarchive` — Unarchive a workflow
+
+```bash
+larkci workflows unarchive <workflow_id>
+```
+
+Restores an archived workflow so it appears in the list and can be invoked again.
+
 #### `workflows list` — List workflows
 
 ```bash
@@ -130,6 +146,50 @@ larkci workflows executions logs <workflow_id> <execution_id>
 larkci workflows executions cancel <workflow_id> <execution_id>
 ```
 
+#### `secret-contexts list` — List secret contexts
+
+```bash
+larkci secret-contexts list
+```
+
+Returns all secret context names and metadata for your account. Does not return secret values.
+
+#### `secret-contexts get` — Get a secret context
+
+```bash
+larkci secret-contexts get <context>
+```
+
+Returns the context name and the list of key names stored in it. Does not return secret values.
+
+#### `secret-contexts create` — Create or replace a secret context
+
+```bash
+larkci secret-contexts create --context production --secret username=admin --secret password=s3cret
+```
+
+| Flag                        | Required | Description                                        |
+| --------------------------- | -------- | -------------------------------------------------- |
+| `--context <name>`          | Yes      | Name of the secret context                         |
+| `--secret <key=value>`      | Yes      | Secret key-value pair (repeat for multiple values) |
+
+```bash
+# Create a secret context with multiple credentials
+larkci secret-contexts create \
+  --context staging \
+  --secret api_key=sk_test_abc123 \
+  --secret username=testuser \
+  --secret password=testpass
+```
+
+#### `secret-contexts delete` — Delete a secret context
+
+```bash
+larkci secret-contexts delete <context>
+```
+
+Permanently deletes a secret context. Workflows referencing it will no longer have access.
+
 ### Examples
 
 ```bash
@@ -138,6 +198,12 @@ larkci workflows create --name "signup-flow" --description "Test user signup"
 
 # List your workflows
 larkci workflows list --limit 20
+
+# Archive a workflow
+larkci workflows archive wf_abc123
+
+# Unarchive a workflow
+larkci workflows unarchive wf_abc123
 
 # Invoke a workflow but don't wait for completion
 larkci workflows invoke --workflow-ids wf_abc123
@@ -162,6 +228,18 @@ larkci workflows executions cancel wf_abc123 exec_xyz789
 
 # Override API key inline
 larkci --api-key sk-test-key workflows invoke --workflow-ids wf_abc123
+
+# Store credentials for a secret context
+larkci secret-contexts create --context production --secret username=admin --secret password=s3cret
+
+# List all secret contexts
+larkci secret-contexts list
+
+# View the keys stored in a secret context
+larkci secret-contexts get production
+
+# Delete a secret context
+larkci secret-contexts delete production
 ```
 
 ## CI Pipeline Usage

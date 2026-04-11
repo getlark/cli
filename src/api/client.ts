@@ -1,8 +1,15 @@
 import type { Config } from "../config.js";
 import type {
-  ListWorkflowExecutionsResponse,
+  GetSecretContextResponse,
+  ListSecretContextsResponse,
+  ListWorkflowEventsResponse,
+  ListWorkflowGroupsResponse,
+  ListWorkflowRepairsResponse,
   ListWorkflowsResponse,
   WorkflowExecutionResource,
+  WorkflowGenerationResource,
+  WorkflowGroupResource,
+  WorkflowRepairResource,
   WorkflowResource,
 } from "./types.js";
 
@@ -69,16 +76,71 @@ export class LarkCIClient {
       throw new Error(message);
     }
 
-    return (await response.json()) as T;
+    const text = await response.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
   }
+
+  private buildQueryPath(
+    basePath: string,
+    params: Record<string, string | number | undefined>,
+  ): string {
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) qs.set(key, String(value));
+    }
+    const query = qs.toString();
+    return query ? `${basePath}?${query}` : basePath;
+  }
+
+  // ── Workflows ──────────────────────────────────────────────
 
   async createWorkflow(options: {
     name: string;
     description: string;
     secret_contexts?: string[];
     mode?: "ai_driven" | "deterministic";
+    group_id?: string;
   }): Promise<WorkflowResource> {
     return this.request<WorkflowResource>("POST", "/workflows", options);
+  }
+
+  async getWorkflow(workflowId: string): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>(
+      "GET",
+      `/workflows/${workflowId}`,
+    );
+  }
+
+  async updateWorkflow(
+    workflowId: string,
+    options: {
+      name?: string;
+      description?: string;
+      secret_contexts?: string[];
+      schedule?: string | null;
+      group_id?: string | null;
+    },
+  ): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>(
+      "PUT",
+      `/workflows/${workflowId}`,
+      options,
+    );
+  }
+
+  async archiveWorkflow(workflowId: string): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>(
+      "POST",
+      `/workflows/${workflowId}/archive`,
+    );
+  }
+
+  async unarchiveWorkflow(workflowId: string): Promise<WorkflowResource> {
+    return this.request<WorkflowResource>(
+      "POST",
+      `/workflows/${workflowId}/unarchive`,
+    );
   }
 
   async invokeWorkflow(
@@ -94,32 +156,17 @@ export class LarkCIClient {
   async listWorkflows(options?: {
     limit?: number;
     offset?: number;
+    group_id?: string;
   }): Promise<ListWorkflowsResponse> {
-    const params = new URLSearchParams();
-    if (options?.limit !== undefined)
-      params.set("limit", String(options.limit));
-    if (options?.offset !== undefined)
-      params.set("offset", String(options.offset));
-    const query = params.toString();
-    const path = query ? `/workflows?${query}` : "/workflows";
+    const path = this.buildQueryPath("/workflows", {
+      limit: options?.limit,
+      offset: options?.offset,
+      group_id: options?.group_id,
+    });
     return this.request<ListWorkflowsResponse>("GET", path);
   }
 
-  async listWorkflowExecutions(
-    workflowId: string,
-    options?: { limit?: number; offset?: number },
-  ): Promise<ListWorkflowExecutionsResponse> {
-    const params = new URLSearchParams();
-    if (options?.limit !== undefined)
-      params.set("limit", String(options.limit));
-    if (options?.offset !== undefined)
-      params.set("offset", String(options.offset));
-    const query = params.toString();
-    const path = query
-      ? `/workflows/${workflowId}/executions?${query}`
-      : `/workflows/${workflowId}/executions`;
-    return this.request<ListWorkflowExecutionsResponse>("GET", path);
-  }
+  // ── Executions ─────────────────────────────────────────────
 
   async getWorkflowExecution(
     workflowId: string,
@@ -150,6 +197,186 @@ export class LarkCIClient {
       `/workflows/${workflowId}/executions/${executionId}/cancel`,
     );
   }
+
+  // ── Generations ────────────────────────────────────────────
+
+  async cancelWorkflowGeneration(
+    workflowId: string,
+    generationId: string,
+  ): Promise<WorkflowGenerationResource> {
+    return this.request<WorkflowGenerationResource>(
+      "POST",
+      `/workflows/${workflowId}/generations/${generationId}/cancel`,
+    );
+  }
+
+  // ── Repairs ────────────────────────────────────────────────
+
+  async repairWorkflow(
+    workflowId: string,
+  ): Promise<WorkflowRepairResource> {
+    return this.request<WorkflowRepairResource>(
+      "POST",
+      `/workflows/${workflowId}/repair`,
+    );
+  }
+
+  async listWorkflowRepairs(
+    workflowId: string,
+    options?: { limit?: number; offset?: number },
+  ): Promise<ListWorkflowRepairsResponse> {
+    const path = this.buildQueryPath(
+      `/workflows/${workflowId}/repairs`,
+      { limit: options?.limit, offset: options?.offset },
+    );
+    return this.request<ListWorkflowRepairsResponse>("GET", path);
+  }
+
+  async getWorkflowRepair(
+    workflowId: string,
+    repairId: string,
+  ): Promise<WorkflowRepairResource> {
+    return this.request<WorkflowRepairResource>(
+      "GET",
+      `/workflows/${workflowId}/repairs/${repairId}`,
+    );
+  }
+
+  async cancelWorkflowRepair(
+    workflowId: string,
+    repairId: string,
+  ): Promise<WorkflowRepairResource> {
+    return this.request<WorkflowRepairResource>(
+      "POST",
+      `/workflows/${workflowId}/repairs/${repairId}/cancel`,
+    );
+  }
+
+  async getWorkflowRepairLogs(
+    workflowId: string,
+    repairId: string,
+  ): Promise<string[]> {
+    return this.request<string[]>(
+      "GET",
+      `/workflows/${workflowId}/repairs/${repairId}/logs`,
+    );
+  }
+
+  // ── Events ─────────────────────────────────────────────────
+
+  async listWorkflowEvents(
+    workflowId: string,
+    options?: { limit?: number; offset?: number },
+  ): Promise<ListWorkflowEventsResponse> {
+    const path = this.buildQueryPath(
+      `/workflows/${workflowId}/events`,
+      { limit: options?.limit, offset: options?.offset },
+    );
+    return this.request<ListWorkflowEventsResponse>("GET", path);
+  }
+
+  // ── Secret Contexts ────────────────────────────────────────
+
+  async listSecretContexts(): Promise<ListSecretContextsResponse> {
+    return this.request<ListSecretContextsResponse>("GET", "/secret-contexts");
+  }
+
+  async getSecretContext(
+    context: string,
+  ): Promise<GetSecretContextResponse> {
+    return this.request<GetSecretContextResponse>(
+      "GET",
+      `/secret-contexts/${encodeURIComponent(context)}`,
+    );
+  }
+
+  async createSecretContext(options: {
+    context: string;
+    value: Record<string, string>;
+  }): Promise<void> {
+    await this.request<unknown>("POST", "/secret-contexts", options);
+  }
+
+  async updateSecretContext(
+    context: string,
+    key: string,
+    value: string,
+  ): Promise<void> {
+    await this.request<unknown>(
+      "PATCH",
+      `/secret-contexts/${encodeURIComponent(context)}`,
+      { key, value },
+    );
+  }
+
+  async deleteSecretContext(context: string): Promise<void> {
+    await this.request<unknown>(
+      "DELETE",
+      `/secret-contexts/${encodeURIComponent(context)}`,
+    );
+  }
+
+  async deleteSecretContextKey(
+    context: string,
+    key: string,
+  ): Promise<void> {
+    await this.request<unknown>(
+      "DELETE",
+      `/secret-contexts/${encodeURIComponent(context)}/${encodeURIComponent(key)}`,
+    );
+  }
+
+  // ── Workflow Groups ────────────────────────────────────────
+
+  async createWorkflowGroup(options: {
+    name: string;
+  }): Promise<WorkflowGroupResource> {
+    return this.request<WorkflowGroupResource>(
+      "POST",
+      "/workflow-groups",
+      options,
+    );
+  }
+
+  async listWorkflowGroups(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ListWorkflowGroupsResponse> {
+    const path = this.buildQueryPath("/workflow-groups", {
+      limit: options?.limit,
+      offset: options?.offset,
+    });
+    return this.request<ListWorkflowGroupsResponse>("GET", path);
+  }
+
+  async getWorkflowGroup(
+    groupId: string,
+  ): Promise<WorkflowGroupResource> {
+    return this.request<WorkflowGroupResource>(
+      "GET",
+      `/workflow-groups/${groupId}`,
+    );
+  }
+
+  async updateWorkflowGroup(
+    groupId: string,
+    options: { name?: string },
+  ): Promise<WorkflowGroupResource> {
+    return this.request<WorkflowGroupResource>(
+      "PUT",
+      `/workflow-groups/${groupId}`,
+      options,
+    );
+  }
+
+  async deleteWorkflowGroup(groupId: string): Promise<void> {
+    await this.request<unknown>(
+      "DELETE",
+      `/workflow-groups/${groupId}`,
+    );
+  }
+
+  // ── Polling ────────────────────────────────────────────────
 
   async pollWorkflowExecution(
     workflowId: string,
