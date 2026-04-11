@@ -1,0 +1,13 @@
+---
+description: Git remote and PR conventions for this repo
+alwaysApply: true
+---
+
+# Git / PR instructions
+
+- The canonical remote for this repo is `git@github.com:getlark/larkci-cli.git` (formerly `uselark`).
+- Before pushing or creating PRs, verify the remote URL with `git remote get-url origin` and update it if it still points to the old `uselark` org:
+  ```bash
+  git remote set-url origin git@github.com:getlark/larkci-cli.git
+  ```
+- The default branch is `main`.
