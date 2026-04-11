@@ -21,7 +21,7 @@ program
   .description(
     "LarkCI CLI - Invoke testing workflows and manage test executions",
   )
-  .version("0.2.0")
+  .version("0.2.5")
   .addOption(new Option("--api-key <key>", "API key").env("LARKCI_API_KEY"))
   .addOption(
     new Option(
