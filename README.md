@@ -58,6 +58,7 @@ larkci workflows create --name "login-flow" --description "Test the login proces
 | `--description <description>`     | Yes      | Workflow description                            |              |
 | `--mode <mode>`                   | No       | Execution mode: `ai_driven` or `deterministic`  | `ai_driven`  |
 | `--secret-contexts <contexts...>` | No       | Secret contexts to attach to the workflow       |              |
+| `--group-id <groupId>`            | No       | Workflow group ID to assign this workflow to     |              |
 
 ```bash
 # Create a deterministic workflow with secret contexts
@@ -67,6 +68,30 @@ larkci workflows create \
   --mode deterministic \
   --secret-contexts production staging
 ```
+
+#### `workflows get` — Get workflow details
+
+```bash
+larkci workflows get <workflow_id>
+```
+
+Returns the full workflow resource including status, mode, schedule, and last execution/generation/repair info.
+
+#### `workflows update` — Update a workflow
+
+```bash
+larkci workflows update <workflow_id> --name "new-name" --description "updated description"
+```
+
+| Flag                              | Description                                           |
+| --------------------------------- | ----------------------------------------------------- |
+| `--name <name>`                   | New name for the workflow                             |
+| `--description <description>`     | New description for the workflow                      |
+| `--secret-contexts <contexts...>` | Secret contexts to attach                             |
+| `--schedule <cron>`               | Cron schedule for the workflow                        |
+| `--group-id <groupId>`            | Workflow group ID (use `null` to ungroup)             |
+
+At least one option is required.
 
 #### `workflows archive` — Archive a workflow
 
@@ -90,10 +115,11 @@ Restores an archived workflow so it appears in the list and can be invoked again
 larkci workflows list
 ```
 
-| Flag               | Description                     | Default |
-| ------------------ | ------------------------------- | ------- |
-| `--limit <number>` | Max workflows to return (1–100) | `10`    |
-| `--offset <number>`| Number of workflows to skip     | `0`     |
+| Flag                  | Description                          | Default |
+| --------------------- | ------------------------------------ | ------- |
+| `--limit <number>`    | Max workflows to return (1–100)      | `10`    |
+| `--offset <number>`   | Number of workflows to skip          | `0`     |
+| `--group-id <groupId>`| Filter workflows by group ID         |         |
 
 #### `workflows invoke` — Invoke workflows
 
@@ -117,17 +143,6 @@ Either `--workflow-ids` or `--all` is required.
 
 Exit codes: `0` = success, `1` = workflow failure, `2` = timeout, `3` = unexpected error.
 
-#### `workflows executions list` — List executions
-
-```bash
-larkci workflows executions list <workflow_id>
-```
-
-| Flag               | Description                      | Default |
-| ------------------ | -------------------------------- | ------- |
-| `--limit <number>` | Max executions to return (1–100) | `10`    |
-| `--offset <number>`| Number of executions to skip     | `0`     |
-
 #### `workflows executions get` — Get execution details
 
 ```bash
@@ -145,6 +160,107 @@ larkci workflows executions logs <workflow_id> <execution_id>
 ```bash
 larkci workflows executions cancel <workflow_id> <execution_id>
 ```
+
+#### `workflows repairs trigger` — Trigger a workflow repair
+
+```bash
+larkci workflows repairs trigger <workflow_id>
+```
+
+Triggers a repair for a workflow. Returns the repair resource.
+
+#### `workflows repairs list` — List workflow repairs
+
+```bash
+larkci workflows repairs list <workflow_id>
+```
+
+| Flag               | Description                    | Default |
+| ------------------ | ------------------------------ | ------- |
+| `--limit <number>` | Max repairs to return (1–100)  | `10`    |
+| `--offset <number>`| Number of repairs to skip      | `0`     |
+
+#### `workflows repairs get` — Get repair details
+
+```bash
+larkci workflows repairs get <workflow_id> <repair_id>
+```
+
+#### `workflows repairs cancel` — Cancel a running repair
+
+```bash
+larkci workflows repairs cancel <workflow_id> <repair_id>
+```
+
+#### `workflows repairs logs` — Get repair logs
+
+```bash
+larkci workflows repairs logs <workflow_id> <repair_id>
+```
+
+#### `workflows generations cancel` — Cancel a running generation
+
+```bash
+larkci workflows generations cancel <workflow_id> <generation_id>
+```
+
+#### `workflows events list` — List workflow events
+
+```bash
+larkci workflows events list <workflow_id>
+```
+
+| Flag               | Description                   | Default |
+| ------------------ | ----------------------------- | ------- |
+| `--limit <number>` | Max events to return (1–100)  | `10`    |
+| `--offset <number>`| Number of events to skip      | `0`     |
+
+Lists all events (generations, executions, repairs) for a workflow.
+
+#### `workflow-groups create` — Create a workflow group
+
+```bash
+larkci workflow-groups create --name "Checkout Flow"
+```
+
+| Flag           | Required | Description                  |
+| -------------- | -------- | ---------------------------- |
+| `--name <name>`| Yes      | Name of the workflow group   |
+
+#### `workflow-groups list` — List workflow groups
+
+```bash
+larkci workflow-groups list
+```
+
+| Flag               | Description                   | Default |
+| ------------------ | ----------------------------- | ------- |
+| `--limit <number>` | Max groups to return (1–100)  | `10`    |
+| `--offset <number>`| Number of groups to skip      | `0`     |
+
+#### `workflow-groups get` — Get a workflow group
+
+```bash
+larkci workflow-groups get <group_id>
+```
+
+#### `workflow-groups update` — Update a workflow group
+
+```bash
+larkci workflow-groups update <group_id> --name "Updated Name"
+```
+
+| Flag            | Description                      |
+| --------------- | -------------------------------- |
+| `--name <name>` | New name for the workflow group  |
+
+#### `workflow-groups delete` — Delete a workflow group
+
+```bash
+larkci workflow-groups delete <group_id>
+```
+
+Workflows in the group become ungrouped.
 
 #### `secret-contexts list` — List secret contexts
 
@@ -182,6 +298,19 @@ larkci secret-contexts create \
   --secret password=testpass
 ```
 
+#### `secret-contexts update` — Update a key in a secret context
+
+```bash
+larkci secret-contexts update <context> --key <key> --value <value>
+```
+
+| Flag              | Required | Description                          |
+| ----------------- | -------- | ------------------------------------ |
+| `--key <key>`     | Yes      | The key to create or update          |
+| `--value <value>` | Yes      | The new value for the key            |
+
+If the key already exists its value is replaced; if it does not exist it is added.
+
 #### `secret-contexts delete` — Delete a secret context
 
 ```bash
@@ -190,14 +319,31 @@ larkci secret-contexts delete <context>
 
 Permanently deletes a secret context. Workflows referencing it will no longer have access.
 
+#### `secret-contexts delete-key` — Delete a key from a secret context
+
+```bash
+larkci secret-contexts delete-key <context> <key>
+```
+
+Removes a single key-value pair from an existing secret context.
+
 ### Examples
 
 ```bash
 # Create a workflow
 larkci workflows create --name "signup-flow" --description "Test user signup"
 
+# Get workflow details
+larkci workflows get wf_abc123
+
+# Update a workflow
+larkci workflows update wf_abc123 --name "updated-signup-flow" --schedule "0 9 * * *"
+
 # List your workflows
 larkci workflows list --limit 20
+
+# List workflows in a group
+larkci workflows list --group-id grp_abc123
 
 # Archive a workflow
 larkci workflows archive wf_abc123
@@ -214,9 +360,6 @@ larkci workflows invoke --workflow-ids wf_abc123 --wait
 # Invoke and wait (up to 5 minutes) with verbose logs
 larkci workflows invoke --workflow-ids wf_abc123 --wait --timeout 300 --verbose
 
-# List recent executions for a workflow
-larkci workflows executions list wf_abc123
-
 # Check execution status
 larkci workflows executions get wf_abc123 exec_xyz789
 
@@ -226,17 +369,44 @@ larkci workflows executions logs wf_abc123 exec_xyz789
 # Cancel a running execution
 larkci workflows executions cancel wf_abc123 exec_xyz789
 
+# Trigger a repair
+larkci workflows repairs trigger wf_abc123
+
+# List repairs
+larkci workflows repairs list wf_abc123
+
+# Cancel a generation
+larkci workflows generations cancel wf_abc123 gen_xyz789
+
+# List events
+larkci workflows events list wf_abc123
+
+# Create a workflow group
+larkci workflow-groups create --name "Checkout Flow"
+
+# List workflow groups
+larkci workflow-groups list
+
+# Delete a workflow group
+larkci workflow-groups delete grp_abc123
+
 # Override API key inline
 larkci --api-key sk-test-key workflows invoke --workflow-ids wf_abc123
 
 # Store credentials for a secret context
 larkci secret-contexts create --context production --secret username=admin --secret password=s3cret
 
+# Update a single key in a secret context
+larkci secret-contexts update production --key password --value new-s3cret
+
 # List all secret contexts
 larkci secret-contexts list
 
 # View the keys stored in a secret context
 larkci secret-contexts get production
+
+# Delete a key from a secret context
+larkci secret-contexts delete-key production password
 
 # Delete a secret context
 larkci secret-contexts delete production
