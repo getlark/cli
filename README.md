@@ -2,6 +2,23 @@
 
 Command-line interface for creating, invoking, and managing [LarkCI](https://getlark.ai) testing workflows.
 
+## Table of Contents
+
+- [Quickstart](#quickstart)
+- [Configuration](#configuration)
+- [CI Pipeline Usage](#ci-pipeline-usage)
+- [Usage](#usage)
+  - [workflows](#commands) — create, get, update, list, archive, invoke
+  - [workflows executions](#workflows-executions-get--get-execution-details) — get, logs, cancel
+  - [workflows repairs](#workflows-repairs-trigger--trigger-a-workflow-repair) — trigger, list, get, cancel, logs
+  - [workflows generations](#workflows-generations-cancel--cancel-a-running-generation) — cancel
+  - [workflows events](#workflows-events-list--list-workflow-events) — list
+  - [workflow-groups](#workflow-groups-create--create-a-workflow-group) — create, list, get, update, delete
+  - [secret-contexts](#secret-contexts-list--list-secret-contexts) — list, get, create, update, delete, delete-key
+  - [Examples](#examples)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Quickstart
 
 Requires Node.js >= 18.
@@ -30,6 +47,37 @@ Alternatively, pass it inline with the `--api-key` flag (see [Global Options](#g
 
 The CLI also supports a `.env` file in the current directory.
 
+## CI Pipeline Usage
+
+The `--wait` flag makes it easy to use in CI pipelines. The command will block until the workflow completes and exit with a non-zero code on failure.
+
+### GitHub Actions Example
+
+Set the `LARKCI_API_KEY` environment variable in GitHub Actions secrets.
+
+```yaml
+- name: Run LarkCI Tests
+  run: npx -y larkci@latest workflows invoke --all --wait
+  env:
+    LARKCI_API_KEY: ${{ secrets.LARKCI_API_KEY }}
+```
+
+### CircleCI Example
+
+Set the `LARKCI_API_KEY` environment variable in CircleCI.
+
+```yaml
+larkci_tests:
+  docker:
+    - image: cimg/node:lts
+  resource_class: small
+  steps:
+    - run:
+        name: Run LarkCI Tests
+        command: |
+          npx -y larkci@latest workflows invoke --all --wait
+```
+
 ## Usage
 
 ```bash
@@ -52,13 +100,13 @@ larkci [options] <command>
 larkci workflows create --name "login-flow" --description "Test the login process end-to-end"
 ```
 
-| Flag                              | Required | Description                                     | Default      |
-| --------------------------------- | -------- | ----------------------------------------------- | ------------ |
-| `--name <name>`                   | Yes      | Workflow name                                   |              |
-| `--description <description>`     | Yes      | Workflow description                            |              |
-| `--mode <mode>`                   | No       | Execution mode: `ai_driven` or `deterministic`  | `ai_driven`  |
-| `--secret-contexts <contexts...>` | No       | Secret contexts to attach to the workflow       |              |
-| `--group-id <groupId>`            | No       | Workflow group ID to assign this workflow to     |              |
+| Flag                              | Required | Description                                    | Default     |
+| --------------------------------- | -------- | ---------------------------------------------- | ----------- |
+| `--name <name>`                   | Yes      | Workflow name                                  |             |
+| `--description <description>`     | Yes      | Workflow description                           |             |
+| `--mode <mode>`                   | No       | Execution mode: `ai_driven` or `deterministic` | `ai_driven` |
+| `--secret-contexts <contexts...>` | No       | Secret contexts to attach to the workflow      |             |
+| `--group-id <groupId>`            | No       | Workflow group ID to assign this workflow to   |             |
 
 ```bash
 # Create a deterministic workflow with secret contexts
@@ -83,13 +131,13 @@ Returns the full workflow resource including status, mode, schedule, and last ex
 larkci workflows update <workflow_id> --name "new-name" --description "updated description"
 ```
 
-| Flag                              | Description                                           |
-| --------------------------------- | ----------------------------------------------------- |
-| `--name <name>`                   | New name for the workflow                             |
-| `--description <description>`     | New description for the workflow                      |
-| `--secret-contexts <contexts...>` | Secret contexts to attach                             |
-| `--schedule <cron>`               | Cron schedule for the workflow                        |
-| `--group-id <groupId>`            | Workflow group ID (use `null` to ungroup)             |
+| Flag                              | Description                               |
+| --------------------------------- | ----------------------------------------- |
+| `--name <name>`                   | New name for the workflow                 |
+| `--description <description>`     | New description for the workflow          |
+| `--secret-contexts <contexts...>` | Secret contexts to attach                 |
+| `--schedule <cron>`               | Cron schedule for the workflow            |
+| `--group-id <groupId>`            | Workflow group ID (use `null` to ungroup) |
 
 At least one option is required.
 
@@ -115,11 +163,11 @@ Restores an archived workflow so it appears in the list and can be invoked again
 larkci workflows list
 ```
 
-| Flag                  | Description                          | Default |
-| --------------------- | ------------------------------------ | ------- |
-| `--limit <number>`    | Max workflows to return (1–100)      | `10`    |
-| `--offset <number>`   | Number of workflows to skip          | `0`     |
-| `--group-id <groupId>`| Filter workflows by group ID         |         |
+| Flag                   | Description                     | Default |
+| ---------------------- | ------------------------------- | ------- |
+| `--limit <number>`     | Max workflows to return (1–100) | `10`    |
+| `--offset <number>`    | Number of workflows to skip     | `0`     |
+| `--group-id <groupId>` | Filter workflows by group ID    |         |
 
 #### `workflows invoke` — Invoke workflows
 
@@ -129,17 +177,25 @@ larkci workflows invoke --all --wait --timeout 300
 
 # Invoke specific workflows and wait
 larkci workflows invoke --workflow-ids wf_abc123 wf_def456 --wait --timeout 300
+
+# Invoke all workflows in a group by ID
+larkci workflows invoke --group-id wfl_grp_abc123 --wait
+
+# Invoke all workflows in a group by name
+larkci workflows invoke --group-name "Checkout Flow" --wait
 ```
 
-| Flag                      | Description                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------- |
-| `--workflow-ids <id...>`  | The IDs of the workflows to invoke                                               |
-| `--all`                   | Invoke all workflows                                                             |
-| `--wait`                  | Wait for the execution to finish (successfully or unsuccessfully) before exiting |
-| `--timeout <seconds>`     | Maximum time to wait in seconds (default: 600, requires `--wait`)                |
-| `--verbose`               | Print verbose output (includes logs)                                             |
+| Flag                       | Description                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| `--workflow-ids <id...>`   | The IDs of the workflows to invoke                                               |
+| `--all`                    | Invoke all workflows                                                             |
+| `--group-id <groupId>`     | Invoke all workflows in a group (by group ID)                                    |
+| `--group-name <groupName>` | Invoke all workflows in a group (by group name)                                  |
+| `--wait`                   | Wait for the execution to finish (successfully or unsuccessfully) before exiting |
+| `--timeout <seconds>`      | Maximum time to wait in seconds (default: 600, requires `--wait`)                |
+| `--verbose`                | Print verbose output (includes logs)                                             |
 
-Either `--workflow-ids` or `--all` is required.
+One of `--workflow-ids`, `--all`, `--group-id`, or `--group-name` is required.
 
 Exit codes: `0` = success, `1` = workflow failure, `2` = timeout, `3` = unexpected error.
 
@@ -175,10 +231,10 @@ Triggers a repair for a workflow. Returns the repair resource.
 larkci workflows repairs list <workflow_id>
 ```
 
-| Flag               | Description                    | Default |
-| ------------------ | ------------------------------ | ------- |
-| `--limit <number>` | Max repairs to return (1–100)  | `10`    |
-| `--offset <number>`| Number of repairs to skip      | `0`     |
+| Flag                | Description                   | Default |
+| ------------------- | ----------------------------- | ------- |
+| `--limit <number>`  | Max repairs to return (1–100) | `10`    |
+| `--offset <number>` | Number of repairs to skip     | `0`     |
 
 #### `workflows repairs get` — Get repair details
 
@@ -210,10 +266,10 @@ larkci workflows generations cancel <workflow_id> <generation_id>
 larkci workflows events list <workflow_id>
 ```
 
-| Flag               | Description                   | Default |
-| ------------------ | ----------------------------- | ------- |
-| `--limit <number>` | Max events to return (1–100)  | `10`    |
-| `--offset <number>`| Number of events to skip      | `0`     |
+| Flag                | Description                  | Default |
+| ------------------- | ---------------------------- | ------- |
+| `--limit <number>`  | Max events to return (1–100) | `10`    |
+| `--offset <number>` | Number of events to skip     | `0`     |
 
 Lists all events (generations, executions, repairs) for a workflow.
 
@@ -223,9 +279,9 @@ Lists all events (generations, executions, repairs) for a workflow.
 larkci workflow-groups create --name "Checkout Flow"
 ```
 
-| Flag           | Required | Description                  |
-| -------------- | -------- | ---------------------------- |
-| `--name <name>`| Yes      | Name of the workflow group   |
+| Flag            | Required | Description                |
+| --------------- | -------- | -------------------------- |
+| `--name <name>` | Yes      | Name of the workflow group |
 
 #### `workflow-groups list` — List workflow groups
 
@@ -233,10 +289,10 @@ larkci workflow-groups create --name "Checkout Flow"
 larkci workflow-groups list
 ```
 
-| Flag               | Description                   | Default |
-| ------------------ | ----------------------------- | ------- |
-| `--limit <number>` | Max groups to return (1–100)  | `10`    |
-| `--offset <number>`| Number of groups to skip      | `0`     |
+| Flag                | Description                  | Default |
+| ------------------- | ---------------------------- | ------- |
+| `--limit <number>`  | Max groups to return (1–100) | `10`    |
+| `--offset <number>` | Number of groups to skip     | `0`     |
 
 #### `workflow-groups get` — Get a workflow group
 
@@ -250,9 +306,9 @@ larkci workflow-groups get <group_id>
 larkci workflow-groups update <group_id> --name "Updated Name"
 ```
 
-| Flag            | Description                      |
-| --------------- | -------------------------------- |
-| `--name <name>` | New name for the workflow group  |
+| Flag            | Description                     |
+| --------------- | ------------------------------- |
+| `--name <name>` | New name for the workflow group |
 
 #### `workflow-groups delete` — Delete a workflow group
 
@@ -284,10 +340,10 @@ Returns the context name and the list of key names stored in it. Does not return
 larkci secret-contexts create --context production --secret username=admin --secret password=s3cret
 ```
 
-| Flag                        | Required | Description                                        |
-| --------------------------- | -------- | -------------------------------------------------- |
-| `--context <name>`          | Yes      | Name of the secret context                         |
-| `--secret <key=value>`      | Yes      | Secret key-value pair (repeat for multiple values) |
+| Flag                   | Required | Description                                        |
+| ---------------------- | -------- | -------------------------------------------------- |
+| `--context <name>`     | Yes      | Name of the secret context                         |
+| `--secret <key=value>` | Yes      | Secret key-value pair (repeat for multiple values) |
 
 ```bash
 # Create a secret context with multiple credentials
@@ -304,10 +360,10 @@ larkci secret-contexts create \
 larkci secret-contexts update <context> --key <key> --value <value>
 ```
 
-| Flag              | Required | Description                          |
-| ----------------- | -------- | ------------------------------------ |
-| `--key <key>`     | Yes      | The key to create or update          |
-| `--value <value>` | Yes      | The new value for the key            |
+| Flag              | Required | Description                 |
+| ----------------- | -------- | --------------------------- |
+| `--key <key>`     | Yes      | The key to create or update |
+| `--value <value>` | Yes      | The new value for the key   |
 
 If the key already exists its value is replaced; if it does not exist it is added.
 
@@ -360,6 +416,12 @@ larkci workflows invoke --workflow-ids wf_abc123 --wait
 # Invoke and wait (up to 5 minutes) with verbose logs
 larkci workflows invoke --workflow-ids wf_abc123 --wait --timeout 300 --verbose
 
+# Invoke all workflows in a group by ID
+larkci workflows invoke --group-id wfl_grp_abc123 --wait
+
+# Invoke all workflows in a group by name
+larkci workflows invoke --group-name "Checkout Flow" --wait
+
 # Check execution status
 larkci workflows executions get wf_abc123 exec_xyz789
 
@@ -410,37 +472,6 @@ larkci secret-contexts delete-key production password
 
 # Delete a secret context
 larkci secret-contexts delete production
-```
-
-## CI Pipeline Usage
-
-The `--wait` flag makes it easy to use in CI pipelines. The command will block until the workflow completes and exit with a non-zero code on failure.
-
-### GitHub Actions Example
-
-Set the `LARKCI_API_KEY` environment variable in GitHub Actions secrets.
-
-```yaml
-- name: Run LarkCI Tests
-  run: npx -y larkci@latest workflows invoke --all --wait
-  env:
-    LARKCI_API_KEY: ${{ secrets.LARKCI_API_KEY }}
-```
-
-### CircleCI Example
-
-Set the `LARKCI_API_KEY` environment variable in CircleCI.
-
-```yaml
-larkci_tests:
-  docker:
-    - image: cimg/node:lts
-  resource_class: small
-  steps:
-    - run:
-        name: Run LarkCI Tests
-        command: |
-          npx -y larkci@latest workflows invoke --all --wait
 ```
 
 ## Contributing
