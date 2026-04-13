@@ -1,7 +1,49 @@
 import { Option, type Command } from "commander";
 import { LarkCIClient, TimeoutError } from "../api/client.js";
 import { getConfig } from "../config.js";
-import { WorkflowExecutionResource } from "../api/types.js";
+import type {
+  WorkflowExecutionResource,
+  WorkflowResource,
+  WorkflowGroupResource,
+} from "../api/types.js";
+
+const PAGE_SIZE = 100;
+
+async function fetchAllWorkflows(
+  client: LarkCIClient,
+  options?: { group_id?: string },
+): Promise<WorkflowResource[]> {
+  const all: WorkflowResource[] = [];
+  let offset = 0;
+  while (true) {
+    const response = await client.listWorkflows({
+      limit: PAGE_SIZE,
+      offset,
+      group_id: options?.group_id,
+    });
+    all.push(...response.workflows);
+    if (!response.has_more) break;
+    offset += PAGE_SIZE;
+  }
+  return all;
+}
+
+async function findGroupByName(
+  client: LarkCIClient,
+  name: string,
+): Promise<WorkflowGroupResource | undefined> {
+  let offset = 0;
+  while (true) {
+    const response = await client.listWorkflowGroups({
+      limit: PAGE_SIZE,
+      offset,
+    });
+    const match = response.workflow_groups.find((g) => g.name === name);
+    if (match) return match;
+    if (!response.has_more) return undefined;
+    offset += PAGE_SIZE;
+  }
+}
 
 const DEFAULT_TIMEOUT_SECONDS = 600;
 const POLL_INTERVAL_MS = 5_000;
@@ -83,6 +125,14 @@ export function registerInvokeCommand(
     .description("Invoke workflow(s)")
     .option("--workflow-ids <id...>", "The IDs of the workflow to invoke")
     .option("--all", "Invoke all workflows", false)
+    .option(
+      "--group-id <groupId>",
+      "Invoke all workflows in a group (by group ID)",
+    )
+    .option(
+      "--group-name <groupName>",
+      "Invoke all workflows in a group (by group name)",
+    )
     .option("--verbose", "Verbose output", false)
     .option(
       "--wait",
@@ -96,12 +146,26 @@ export function registerInvokeCommand(
     )
     .addHelpText(
       "after",
-      "example:\n\nRun all workflows and wait for completion:\n$ larkci workflows invoke --all --wait\n\nRun a specific workflow and wait for completion:\n$ larkci workflows invoke wf_abc123 --wait",
+      "\nRun all workflows and wait for completion:\n$ larkci workflows invoke --all --wait",
+    )
+    .addHelpText(
+      "after",
+      "\nRun a specific workflow and wait for completion:\n$ larkci workflows invoke --workflow-ids wf_abc123 --wait",
+    )
+    .addHelpText(
+      "after",
+      "\nRun all workflows in a group:\n$ larkci workflows invoke --group-id wfl_grp_abc123 --wait",
+    )
+    .addHelpText(
+      "after",
+      '\nRun all workflows in a group by name:\n$ larkci workflows invoke --group-name "Checkout Flow" --wait',
     )
     .action(
       async (cmdOpts: {
         workflowIds?: string[];
         all?: boolean;
+        groupId?: string;
+        groupName?: string;
         wait?: boolean;
         timeout?: string;
         verbose?: boolean;
@@ -118,13 +182,42 @@ export function registerInvokeCommand(
         let workflowIds: string[] = [];
 
         if (cmdOpts.all) {
-          const response = await client.listWorkflows();
-          workflowIds = response.workflows.map((workflow) => workflow.id);
+          const workflows = await fetchAllWorkflows(client);
+          workflowIds = workflows.map((w) => w.id);
+        } else if (cmdOpts.groupId) {
+          const workflows = await fetchAllWorkflows(client, {
+            group_id: cmdOpts.groupId,
+          });
+          workflowIds = workflows.map((w) => w.id);
+          if (workflowIds.length === 0) {
+            console.error(
+              `Error: No workflows found in group "${cmdOpts.groupId}".`,
+            );
+            process.exit(1);
+          }
+        } else if (cmdOpts.groupName) {
+          const group = await findGroupByName(client, cmdOpts.groupName);
+          if (!group) {
+            console.error(
+              `Error: No workflow group found with name "${cmdOpts.groupName}".`,
+            );
+            process.exit(1);
+          }
+          const workflows = await fetchAllWorkflows(client, {
+            group_id: group.id,
+          });
+          workflowIds = workflows.map((w) => w.id);
+          if (workflowIds.length === 0) {
+            console.error(
+              `Error: No workflows found in group "${cmdOpts.groupName}".`,
+            );
+            process.exit(1);
+          }
         } else if (cmdOpts.workflowIds) {
           workflowIds = cmdOpts.workflowIds;
         } else {
           console.error(
-            "Error: No workflow IDs provided. Use --workflow-ids or --all to specify workflows.",
+            "Error: No workflow IDs provided. Use --workflow-ids, --group-id, --group-name, or --all to specify workflows.",
           );
           process.exit(1);
         }
