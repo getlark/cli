@@ -35,7 +35,7 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "publish:larkci": "npm pkg set name=larkci bin.larkci=./dist/index.js && npm pkg delete bin.getlark && npm publish",
-    "publish:scoped": "npm pkg set name=@getlark/cli bin.getlark=./dist/index.js && npm pkg delete bin.larkci && npm publish; npm pkg set name=larkci bin.larkci=./dist/index.js && npm pkg delete bin.getlark",
+    "publish:scoped": "npm pkg set name=@getlark/cli bin.getlark=./dist/index.js && npm pkg delete bin.larkci && npm publish; code=$?; npm pkg set name=larkci bin.larkci=./dist/index.js && npm pkg delete bin.getlark; exit $code",
     "publish:all": "npm run publish:larkci && npm run publish:scoped"
   },
   "dependencies": {
