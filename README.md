@@ -37,13 +37,28 @@ larkci workflows invoke --all --wait
 
 ## Configuration
 
-Set your API key as an environment variable:
+The fastest way to authenticate is `larkci login`:
 
 ```bash
-export LARKCI_API_KEY=your-api-key
+larkci login                          # prompts for your API key
+larkci login --api-key your-api-key   # non-interactive
 ```
 
-Alternatively, pass it inline with the `--api-key` flag (see [Global Options](#global-options)).
+This stores your credentials at `~/.getlark/config.json` (mode `0600`) so subsequent commands work in any new shell — no need to reload your shell or re-export an env var.
+
+The CLI resolves the API key in this order: `--api-key` flag → `LARKCI_API_KEY` env var → `~/.getlark/config.json` → error. The same precedence applies to `--api-url` / `LARKCI_API_URL`. CI usage is unchanged — keep using the env var.
+
+### Profiles
+
+If you work across multiple LarkCI accounts, use named profiles:
+
+```bash
+larkci --profile staging login        # save a second profile
+larkci config list                    # show all profiles (* = active)
+larkci config use staging             # switch the active profile
+larkci --profile staging workflows list   # one-shot override
+larkci --profile staging logout       # remove the profile
+```
 
 The CLI also supports a `.env` file in the current directory.
 
@@ -86,11 +101,12 @@ larkci [options] <command>
 
 ### Global Options
 
-| Flag              | Description                                  |
-| ----------------- | -------------------------------------------- |
-| `--api-key <key>` | API key (overrides `LARKCI_API_KEY` env var) |
-| `-V, --version`   | Display the current version                  |
-| `-h, --help`      | Display help                                 |
+| Flag               | Description                                                  |
+| ------------------ | ------------------------------------------------------------ |
+| `--api-key <key>`  | API key (overrides `LARKCI_API_KEY` env var and stored config) |
+| `--profile <name>` | Profile to read from `~/.getlark/config.json`                |
+| `-V, --version`    | Display the current version                                  |
+| `-h, --help`       | Display help                                                 |
 
 ### Commands
 

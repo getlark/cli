@@ -23,6 +23,7 @@ export function registerWorkflowGroupsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -49,6 +50,7 @@ export function registerWorkflowGroupsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -72,6 +74,7 @@ export function registerWorkflowGroupsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -98,6 +101,7 @@ export function registerWorkflowGroupsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -128,6 +132,7 @@ export function registerWorkflowGroupsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 

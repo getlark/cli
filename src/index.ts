@@ -13,6 +13,9 @@ import { registerGenerationsCommand } from "./commands/generations.js";
 import { registerEventsCommand } from "./commands/events.js";
 import { registerSecretContextsCommand } from "./commands/secret-contexts.js";
 import { registerWorkflowGroupsCommand } from "./commands/workflow-groups.js";
+import { registerLoginCommand } from "./commands/login.js";
+import { registerLogoutCommand } from "./commands/logout.js";
+import { registerConfigCommand } from "./commands/config.js";
 
 const program = new Command();
 
@@ -28,6 +31,12 @@ program
       "--api-url <url>",
       "API base URL (overrides LARKCI_API_URL env var)",
     ).hideHelp(),
+  )
+  .addOption(
+    new Option(
+      "--profile <name>",
+      "Profile to read from ~/.getlark/config.json",
+    ),
   );
 
 const workflows = program.command("workflows").description("Manage workflows");
@@ -45,5 +54,9 @@ registerEventsCommand(workflows, program);
 
 registerSecretContextsCommand(program);
 registerWorkflowGroupsCommand(program);
+
+registerLoginCommand(program);
+registerLogoutCommand(program);
+registerConfigCommand(program);
 
 program.parse();

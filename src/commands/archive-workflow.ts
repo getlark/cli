@@ -15,6 +15,7 @@ export function registerArchiveWorkflowCommands(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -38,6 +39,7 @@ export function registerArchiveWorkflowCommands(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
