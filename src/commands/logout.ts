@@ -19,7 +19,7 @@ export function registerLogoutCommand(program: Command): void {
       }
 
       const profileName: string =
-        opts.profile ?? file.current_profile ?? DEFAULT_PROFILE_NAME;
+        opts.profile || file.current_profile || DEFAULT_PROFILE_NAME;
 
       const removed = removeProfile(profileName);
       if (!removed) {

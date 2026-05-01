@@ -17,11 +17,19 @@ export function registerLoginCommand(program: Command): void {
     .action(async () => {
       const opts = program.opts();
       const profileName: string =
-        opts.profile ??
-        readConfigFile()?.current_profile ??
+        opts.profile ||
+        readConfigFile()?.current_profile ||
         DEFAULT_PROFILE_NAME;
 
-      let apiKey: string | undefined = opts.apiKey;
+      // Only treat --api-key as user-supplied if it came from the CLI flag.
+      // The global option also reads LARKCI_API_KEY via .env(), but env-supplied
+      // values shouldn't silently skip the interactive prompt.
+      const apiKeyFromFlag =
+        program.getOptionValueSource("apiKey") === "cli"
+          ? (opts.apiKey as string | undefined)
+          : undefined;
+
+      let apiKey: string | undefined = apiKeyFromFlag;
       if (!apiKey) {
         try {
           apiKey = (
