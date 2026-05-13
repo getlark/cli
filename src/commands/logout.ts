@@ -42,7 +42,7 @@ export function registerLogoutCommand(program: Command): void {
       const removed = removeProfile(profileName);
       if (!removed) {
         console.error(
-          `Error: Profile "${profileName}" not found. Run \`larkci config list\` to see available profiles.`,
+          `Error: Profile "${profileName}" not found. Run \`getlark config list\` to see available profiles.`,
         );
         process.exit(1);
       }

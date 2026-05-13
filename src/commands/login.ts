@@ -32,7 +32,7 @@ export function registerLoginCommand(program: Command): void {
         opts.profile || existing?.current_profile || DEFAULT_PROFILE_NAME;
 
       // Only treat --api-key as user-supplied if it came from the CLI flag.
-      // The global option also reads LARKCI_API_KEY via .env(), but env-supplied
+      // The global option also reads GETLARK_API_KEY via .env(), but env-supplied
       // values shouldn't silently skip the interactive prompt.
       const apiKeyFromFlag =
         program.getOptionValueSource("apiKey") === "cli"

@@ -1,5 +1,5 @@
 import { Option, type Command } from "commander";
-import { LarkCIClient, TimeoutError } from "../api/client.js";
+import { GetLarkClient, TimeoutError } from "../api/client.js";
 import { getConfig } from "../config.js";
 import type {
   WorkflowExecutionResource,
@@ -10,7 +10,7 @@ import type {
 const PAGE_SIZE = 100;
 
 async function fetchAllWorkflows(
-  client: LarkCIClient,
+  client: GetLarkClient,
   options?: { group_id?: string },
 ): Promise<WorkflowResource[]> {
   const all: WorkflowResource[] = [];
@@ -29,7 +29,7 @@ async function fetchAllWorkflows(
 }
 
 async function findGroupByName(
-  client: LarkCIClient,
+  client: GetLarkClient,
   name: string,
 ): Promise<WorkflowGroupResource | undefined> {
   let offset = 0;
@@ -65,7 +65,7 @@ const logForWorkflow = (
 };
 
 async function invokeWorkflow(
-  client: LarkCIClient,
+  client: GetLarkClient,
   workflowId: string,
   wait: boolean,
   timeoutSeconds: number,
@@ -146,19 +146,19 @@ export function registerInvokeCommand(
     )
     .addHelpText(
       "after",
-      "\nRun all workflows and wait for completion:\n$ larkci workflows invoke --all --wait",
+      "\nRun all workflows and wait for completion:\n$ getlark workflows invoke --all --wait",
     )
     .addHelpText(
       "after",
-      "\nRun a specific workflow and wait for completion:\n$ larkci workflows invoke --workflow-ids wf_abc123 --wait",
+      "\nRun a specific workflow and wait for completion:\n$ getlark workflows invoke --workflow-ids wf_abc123 --wait",
     )
     .addHelpText(
       "after",
-      "\nRun all workflows in a group:\n$ larkci workflows invoke --group-id wfl_grp_abc123 --wait",
+      "\nRun all workflows in a group:\n$ getlark workflows invoke --group-id wfl_grp_abc123 --wait",
     )
     .addHelpText(
       "after",
-      '\nRun all workflows in a group by name:\n$ larkci workflows invoke --group-name "Checkout Flow" --wait',
+      '\nRun all workflows in a group by name:\n$ getlark workflows invoke --group-name "Checkout Flow" --wait',
     )
     .action(
       async (cmdOpts: {
@@ -176,7 +176,7 @@ export function registerInvokeCommand(
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         const verbose = cmdOpts.verbose ?? false;
 

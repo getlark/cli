@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
 export function registerExecutionCommand(
@@ -22,7 +22,7 @@ export function registerExecutionCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.getWorkflowExecution(
@@ -50,7 +50,7 @@ export function registerExecutionCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const logs = await client.getWorkflowExecutionLogs(
@@ -80,7 +80,7 @@ export function registerExecutionCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.cancelWorkflowExecution(

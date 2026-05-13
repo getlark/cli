@@ -1,13 +1,13 @@
 {
-  "name": "larkci",
+  "name": "@getlark/cli",
   "version": "0.4.0",
-  "description": "LarkCI CLI - Invoke testing workflows and manage test executions",
+  "description": "getlark CLI - Invoke testing workflows and manage test executions",
   "license": "ISC",
   "author": "",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "larkci": "./dist/index.js"
+    "getlark": "./dist/index.js"
   },
   "publishConfig": {
     "access": "public"
@@ -20,7 +20,7 @@
     "node": ">=18"
   },
   "keywords": [
-    "larkci",
+    "getlark",
     "cli",
     "testing",
     "ci",
@@ -33,10 +33,7 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
-    "publish:larkci": "npm pkg set name=larkci bin.larkci=./dist/index.js && npm pkg delete bin.getlark && npm publish",
-    "publish:scoped": "npm pkg set name=@getlark/cli bin.getlark=./dist/index.js && npm pkg delete bin.larkci && npm publish; code=$?; npm pkg set name=larkci bin.larkci=./dist/index.js && npm pkg delete bin.getlark; exit $code",
-    "publish:all": "npm run publish:larkci && npm run publish:scoped"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "commander": "^13.1.0",

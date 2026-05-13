@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
 export function registerRepairsCommand(
@@ -21,7 +21,7 @@ export function registerRepairsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.repairWorkflow(workflowId);
@@ -55,7 +55,7 @@ export function registerRepairsCommand(
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         try {
           const result = await client.listWorkflowRepairs(workflowId, {
@@ -84,7 +84,7 @@ export function registerRepairsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.getWorkflowRepair(workflowId, repairId);
@@ -109,7 +109,7 @@ export function registerRepairsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.cancelWorkflowRepair(
@@ -137,7 +137,7 @@ export function registerRepairsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const logs = await client.getWorkflowRepairLogs(

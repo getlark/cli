@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
 export function registerWorkflowGroupsCommand(
@@ -25,7 +25,7 @@ export function registerWorkflowGroupsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.listWorkflowGroups({
@@ -52,7 +52,7 @@ export function registerWorkflowGroupsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.getWorkflowGroup(groupId);
@@ -76,7 +76,7 @@ export function registerWorkflowGroupsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.createWorkflowGroup({
@@ -103,7 +103,7 @@ export function registerWorkflowGroupsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       if (!cmdOpts.name) {
         console.error("Error: --name is required.");
@@ -134,7 +134,7 @@ export function registerWorkflowGroupsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         await client.deleteWorkflowGroup(groupId);

@@ -1,9 +1,9 @@
-# Contributing to LarkCI CLI
+# Contributing to getlark CLI
 
 ## Prerequisites
 
 - Node.js >= 18
-- A LarkCI API key
+- A getlark API key
 
 ## Setup
 
@@ -18,7 +18,7 @@ npm install
 Create a `.env` file in the project root (or export the variables in your shell):
 
 ```
-LARKCI_API_KEY=your-api-key
+GETLARK_API_KEY=your-api-key
 ```
 
 ## Build
@@ -47,7 +47,7 @@ You can also link the CLI globally for local testing:
 
 ```bash
 npm link
-larkci workflows <subcommand>
+getlark workflows <subcommand>
 ```
 
 ## Scripts
@@ -66,8 +66,8 @@ src/
 ├── index.ts          # CLI entry point
 ├── config.ts         # Configuration / env loading
 ├── api/
-│   ├── client.ts     # LarkCI API client
-│   └── types.ts      # LarkCI API types
+│   ├── client.ts     # getlark API client
+│   └── types.ts      # getlark API types
 └── commands/
     ├── invoke.ts     # `workflows invoke` command
     ├── execution.ts  # `workflows executions` command

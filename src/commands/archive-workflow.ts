@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
 export function registerArchiveWorkflowCommands(
@@ -17,7 +17,7 @@ export function registerArchiveWorkflowCommands(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const workflow = await client.archiveWorkflow(workflowId);
@@ -41,7 +41,7 @@ export function registerArchiveWorkflowCommands(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const workflow = await client.unarchiveWorkflow(workflowId);

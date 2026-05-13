@@ -10,6 +10,41 @@ export interface Config {
 
 const DEFAULT_API_URL = "https://api.getlark.ai";
 
+let warnedLegacyApiKey = false;
+let warnedLegacyApiUrl = false;
+
+function readEnvApiKey(): string | undefined {
+  const fresh = process.env.GETLARK_API_KEY;
+  if (fresh) return fresh;
+  const legacy = process.env.LARKCI_API_KEY;
+  if (legacy) {
+    if (!warnedLegacyApiKey) {
+      console.error(
+        "Warning: LARKCI_API_KEY is deprecated. Rename to GETLARK_API_KEY.",
+      );
+      warnedLegacyApiKey = true;
+    }
+    return legacy;
+  }
+  return undefined;
+}
+
+function readEnvApiUrl(): string | undefined {
+  const fresh = process.env.GETLARK_API_URL;
+  if (fresh) return fresh;
+  const legacy = process.env.LARKCI_API_URL;
+  if (legacy) {
+    if (!warnedLegacyApiUrl) {
+      console.error(
+        "Warning: LARKCI_API_URL is deprecated. Rename to GETLARK_API_URL.",
+      );
+      warnedLegacyApiUrl = true;
+    }
+    return legacy;
+  }
+  return undefined;
+}
+
 export function getConfig(options: {
   apiKey?: string;
   apiUrl?: string;
@@ -24,7 +59,7 @@ export function getConfig(options: {
       fileApiUrl = profile.data.api_url;
     } else if (options.profile) {
       console.error(
-        `Error: Profile "${options.profile}" not found. Run \`larkci config list\` to see available profiles.`,
+        `Error: Profile "${options.profile}" not found. Run \`getlark config list\` to see available profiles.`,
       );
       process.exit(1);
     }
@@ -34,32 +69,28 @@ export function getConfig(options: {
     process.exit(1);
   }
 
-  const apiKey =
-    options.apiKey ?? process.env.LARKCI_API_KEY ?? fileApiKey;
-  const apiUrl =
-    options.apiUrl ??
-    process.env.LARKCI_API_URL ??
-    fileApiUrl ??
-    DEFAULT_API_URL;
+  const envApiKey = readEnvApiKey();
+  const envApiUrl = readEnvApiUrl();
+
+  const apiKey = options.apiKey ?? envApiKey ?? fileApiKey;
+  const apiUrl = options.apiUrl ?? envApiUrl ?? fileApiUrl ?? DEFAULT_API_URL;
 
   if (options.profile) {
-    const envKey = process.env.LARKCI_API_KEY;
-    if (envKey && fileApiKey && envKey !== fileApiKey) {
+    if (envApiKey && fileApiKey && envApiKey !== fileApiKey) {
       console.error(
-        `Warning: --profile "${options.profile}" was specified, but LARKCI_API_KEY is set in your environment and takes precedence. Unset LARKCI_API_KEY to use the profile's API key.`,
+        `Warning: --profile "${options.profile}" was specified, but GETLARK_API_KEY is set in your environment and takes precedence. Unset GETLARK_API_KEY to use the profile's API key.`,
       );
     }
-    const envUrl = process.env.LARKCI_API_URL;
-    if (envUrl && fileApiUrl && envUrl !== fileApiUrl) {
+    if (envApiUrl && fileApiUrl && envApiUrl !== fileApiUrl) {
       console.error(
-        `Warning: --profile "${options.profile}" was specified, but LARKCI_API_URL is set in your environment and takes precedence. Unset LARKCI_API_URL to use the profile's API URL.`,
+        `Warning: --profile "${options.profile}" was specified, but GETLARK_API_URL is set in your environment and takes precedence. Unset GETLARK_API_URL to use the profile's API URL.`,
       );
     }
   }
 
   if (!apiKey) {
     console.error(
-      "Error: API key is required. Run `larkci login`, set LARKCI_API_KEY, or pass --api-key.",
+      "Error: API key is required. Run `getlark login`, set GETLARK_API_KEY, or pass --api-key.",
     );
     console.error(`Config file: ${CONFIG_PATH}`);
     process.exit(1);

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-LarkCI CLI (`larkci`) — a TypeScript CLI tool for managing workflows on the LarkCI testing platform. Built with Commander.js, uses Node.js native fetch for API calls.
+getlark CLI (`getlark`, published as `@getlark/cli`) — a TypeScript CLI tool for managing workflows on the getlark testing platform. Built with Commander.js, uses Node.js native fetch for API calls.
 
 ## Commands
 
@@ -19,9 +19,9 @@ No test runner or linter is configured.
 
 **Entry point:** `src/index.ts` — initializes Commander program, registers all command modules, sets up global options (`--api-key`, `--api-url`).
 
-**Config:** `src/config.ts` — resolves config from CLI options and env vars (`LARKCI_API_KEY`, `LARKCI_API_URL`). Default API URL: `https://api.getlark.ai`.
+**Config:** `src/config.ts` — resolves config from CLI options and env vars (`GETLARK_API_KEY`, `GETLARK_API_URL`; legacy `LARKCI_API_KEY`/`LARKCI_API_URL` still accepted as a fallback with a deprecation warning). Default API URL: `https://api.getlark.ai`.
 
-**API client:** `src/api/client.ts` — `LarkCIClient` class wraps fetch with X-API-Key auth. Methods organized by resource (workflows, executions, repairs, generations, events, secret-contexts, workflow-groups). Includes `pollWorkflowExecution()` for waiting on execution results.
+**API client:** `src/api/client.ts` — `GetLarkClient` class wraps fetch with X-API-Key auth. Methods organized by resource (workflows, executions, repairs, generations, events, secret-contexts, workflow-groups). Includes `pollWorkflowExecution()` for waiting on execution results.
 
 **Types:** `src/api/types.ts` — all API resource and response types.
 
@@ -37,7 +37,7 @@ No test runner or linter is configured.
 - ES modules throughout (`type: "module"` in package.json, NodeNext module resolution)
 - Node.js >= 18 required
 - Strict TypeScript with source maps and declaration maps
-- CLI binary entry: `./dist/index.js` → `larkci`
+- CLI binary entry: `./dist/index.js` → `getlark`
 - `prepublishOnly` hook runs build before npm publish
 
 ## Git

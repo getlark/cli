@@ -29,7 +29,7 @@ export interface PollOptions {
   ) => void | Promise<void>;
 }
 
-export class LarkCIClient {
+export class GetLarkClient {
   private baseUrl: string;
   private apiKey: string;
 
@@ -61,7 +61,7 @@ export class LarkCIClient {
     } catch (err) {
       const cause = err instanceof Error ? err.message : String(err);
       throw new Error(
-        `Could not connect to ${this.baseUrl} (${cause}). Is the API running? Check your LARKCI_API_URL setting.`,
+        `Could not connect to ${this.baseUrl} (${cause}). Is the API running? Check your GETLARK_API_URL setting.`,
       );
     }
 

@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
 export function registerSecretContextsCommand(
@@ -19,7 +19,7 @@ export function registerSecretContextsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const response = await client.listSecretContexts();
@@ -43,7 +43,7 @@ export function registerSecretContextsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const response = await client.getSecretContext(context);
@@ -77,7 +77,7 @@ export function registerSecretContextsCommand(
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         const value: Record<string, string> = {};
         for (const pair of cmdOpts.secret) {
@@ -125,7 +125,7 @@ export function registerSecretContextsCommand(
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         try {
           await client.updateSecretContext(
@@ -156,7 +156,7 @@ export function registerSecretContextsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         await client.deleteSecretContext(context);
@@ -181,7 +181,7 @@ export function registerSecretContextsCommand(
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         await client.deleteSecretContextKey(context, key);

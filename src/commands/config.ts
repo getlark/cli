@@ -17,7 +17,7 @@ export function registerConfigCommand(program: Command): void {
     .action(() => {
       const file = readConfigFile();
       if (!file || Object.keys(file.profiles).length === 0) {
-        console.log(`No profiles configured. Run \`larkci login\` to add one.`);
+        console.log(`No profiles configured. Run \`getlark login\` to add one.`);
         console.log(`Config file: ${CONFIG_PATH}`);
         return;
       }
@@ -49,7 +49,7 @@ export function registerConfigCommand(program: Command): void {
       const ok = setCurrentProfile(profile);
       if (!ok) {
         console.error(
-          `Error: Profile "${profile}" not found. Run \`larkci config list\` to see available profiles.`,
+          `Error: Profile "${profile}" not found. Run \`getlark config list\` to see available profiles.`,
         );
         process.exit(1);
       }

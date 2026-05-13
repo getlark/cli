@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 
 export function registerUpdateWorkflowCommand(
@@ -35,7 +35,7 @@ export function registerUpdateWorkflowCommand(
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         const updatePayload: Record<string, unknown> = {};
         if (cmdOpts.name !== undefined) updatePayload.name = cmdOpts.name;
@@ -60,7 +60,7 @@ export function registerUpdateWorkflowCommand(
         try {
           const workflow = await client.updateWorkflow(
             workflowId,
-            updatePayload as Parameters<LarkCIClient["updateWorkflow"]>[1],
+            updatePayload as Parameters<GetLarkClient["updateWorkflow"]>[1],
           );
           console.log(JSON.stringify(workflow, null, 2));
         } catch (error) {

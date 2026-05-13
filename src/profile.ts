@@ -69,7 +69,7 @@ export function getProfile(profileName?: string): {
   if (!data) {
     if (profileName) {
       throw new Error(
-        `Profile "${profileName}" not found in ${CONFIG_PATH}. Run \`larkci config list\` to see available profiles.`,
+        `Profile "${profileName}" not found in ${CONFIG_PATH}. Run \`getlark config list\` to see available profiles.`,
       );
     }
     return null;

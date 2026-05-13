@@ -20,16 +20,16 @@ import { registerConfigCommand } from "./commands/config.js";
 const program = new Command();
 
 program
-  .name("larkci")
+  .name("getlark")
   .description(
-    "LarkCI CLI - Invoke testing workflows and manage test executions",
+    "getlark CLI - Invoke testing workflows and manage test executions",
   )
   .version("0.2.5")
-  .addOption(new Option("--api-key <key>", "API key").env("LARKCI_API_KEY"))
+  .addOption(new Option("--api-key <key>", "API key").env("GETLARK_API_KEY"))
   .addOption(
     new Option(
       "--api-url <url>",
-      "API base URL (overrides LARKCI_API_URL env var)",
+      "API base URL (overrides GETLARK_API_URL env var)",
     ).hideHelp(),
   )
   .addOption(
