@@ -6,6 +6,7 @@ Command-line interface for creating, invoking, and managing [getlark](https://ge
 
 - [Quickstart](#quickstart)
 - [Configuration](#configuration)
+- [Use with AI coding agents](#use-with-ai-coding-agents)
 - [CI Pipeline Usage](#ci-pipeline-usage)
 - [Usage](#usage)
   - [workflows](#commands) — create, get, update, list, archive, invoke
@@ -61,6 +62,27 @@ getlark --profile staging logout       # remove the profile
 ```
 
 The CLI also supports a `.env` file in the current directory.
+
+## Use with AI coding agents
+
+Lark ships [Agent Skills](https://docs.getlark.ai/agents) that teach Claude Code, Cursor, and other agents how to author, invoke, and manage workflows through the `getlark` CLI — no per-session priming required.
+
+**Claude Code plugin** (skills + `/getlark:*` slash commands + optional branch-validation hook):
+
+```
+/plugin marketplace add getlark/skills
+/plugin install getlark
+/reload-plugins
+/getlark:setup
+```
+
+**Any other agent** (Cursor, Codex, OpenCode, Windsurf, Gemini CLI, Copilot, …) via the [Vercel Skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add getlark/skills
+```
+
+Then ask the agent to run the `setup` skill. See the [Agents docs](https://docs.getlark.ai/agents) for the full skill catalog and the opt-in `PostToolUse` hook that validates your branch after every `git commit` or `git push`.
 
 ## CI Pipeline Usage
 
