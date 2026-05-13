@@ -42,6 +42,21 @@ export function getConfig(options: {
     fileApiUrl ??
     DEFAULT_API_URL;
 
+  if (options.profile) {
+    const envKey = process.env.LARKCI_API_KEY;
+    if (envKey && fileApiKey && envKey !== fileApiKey) {
+      console.error(
+        `Warning: --profile "${options.profile}" was specified, but LARKCI_API_KEY is set in your environment and takes precedence. Unset LARKCI_API_KEY to use the profile's API key.`,
+      );
+    }
+    const envUrl = process.env.LARKCI_API_URL;
+    if (envUrl && fileApiUrl && envUrl !== fileApiUrl) {
+      console.error(
+        `Warning: --profile "${options.profile}" was specified, but LARKCI_API_URL is set in your environment and takes precedence. Unset LARKCI_API_URL to use the profile's API URL.`,
+      );
+    }
+  }
+
   if (!apiKey) {
     console.error(
       "Error: API key is required. Run `larkci login`, set LARKCI_API_KEY, or pass --api-key.",
