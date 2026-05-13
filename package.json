@@ -1,8 +1,16 @@
 {
   "name": "@getlark/cli",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "getlark CLI - Invoke testing workflows and manage test executions",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getlark/cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/getlark/cli/issues"
+  },
+  "homepage": "https://getlark.ai",
   "author": "getlark",
   "type": "module",
   "main": "dist/index.js",
