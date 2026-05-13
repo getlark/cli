@@ -87,16 +87,6 @@ export function getProfile(profileName?: string): {
   return { name, data };
 }
 
-export function upsertProfile(name: string, data: ProfileData): void {
-  const file = readConfigFile() ?? {
-    current_profile: name,
-    profiles: {},
-  };
-  file.profiles[name] = data;
-  if (!file.current_profile) file.current_profile = name;
-  writeConfigFile(file);
-}
-
 export function removeProfile(name: string): boolean {
   const file = readConfigFile();
   if (!file || !file.profiles[name]) return false;
