@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
 import { Command, Option } from "commander";
 import { registerInvokeCommand } from "./commands/invoke.js";
 import { registerExecutionCommand } from "./commands/execution.js";
@@ -17,6 +18,10 @@ import { registerLoginCommand } from "./commands/login.js";
 import { registerLogoutCommand } from "./commands/logout.js";
 import { registerConfigCommand } from "./commands/config.js";
 
+const pkg = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string };
+
 const program = new Command();
 
 program
@@ -24,7 +29,7 @@ program
   .description(
     "getlark CLI - Invoke testing workflows and manage test executions",
   )
-  .version("0.2.5")
+  .version(pkg.version)
   .addOption(new Option("--api-key <key>", "API key").env("GETLARK_API_KEY"))
   .addOption(
     new Option(

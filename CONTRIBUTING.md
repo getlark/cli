@@ -10,15 +10,9 @@
 Clone the repository and install dependencies:
 
 ```bash
-git clone <repo-url>
-cd larkci-cli
+git clone <repo-url> getlark-cli
+cd getlark-cli
 npm install
-```
-
-Create a `.env` file in the project root (or export the variables in your shell):
-
-```
-GETLARK_API_KEY=your-api-key
 ```
 
 ## Build
@@ -30,6 +24,14 @@ npm run build
 This compiles TypeScript from `src/` into `dist/`.
 
 ## Running Locally
+
+**Authenticate:**
+```bash
+getlark login
+```
+
+This will prompt you to enter your API key.
+
 
 **Development (no build step needed):**
 
@@ -63,13 +65,27 @@ getlark workflows <subcommand>
 
 ```
 src/
-├── index.ts          # CLI entry point
-├── config.ts         # Configuration / env loading
+├── index.ts          # CLI entry point — registers commands and global options
+├── config.ts         # Resolves API key/URL from flag, env, profile
+├── profile.ts        # Read/write ~/.getlark/config.json profiles
+├── prompt.ts         # Interactive secret prompt for `login`
 ├── api/
-│   ├── client.ts     # getlark API client
-│   └── types.ts      # getlark API types
+│   ├── client.ts     # GetLarkClient — wraps fetch with X-API-Key auth
+│   └── types.ts      # API resource and response types
 └── commands/
-    ├── invoke.ts     # `workflows invoke` command
-    ├── execution.ts  # `workflows executions` command
-    └── list-workflows.ts  # `workflows list` command
+    ├── login.ts              # `login` — save API key to a profile
+    ├── logout.ts             # `logout` — remove a profile
+    ├── config.ts             # `config list` / `config use`
+    ├── list-workflows.ts     # `workflows list`
+    ├── get-workflow.ts       # `workflows get`
+    ├── create-workflow.ts    # `workflows create`
+    ├── update-workflow.ts    # `workflows update`
+    ├── archive-workflow.ts   # `workflows archive` / `unarchive`
+    ├── invoke.ts             # `workflows invoke` (+ --wait polling)
+    ├── execution.ts          # `workflows executions` (get/logs/cancel)
+    ├── repairs.ts            # `workflows repairs` (trigger/list/get/cancel/logs)
+    ├── generations.ts        # `workflows generations cancel`
+    ├── events.ts             # `workflows events list`
+    ├── workflow-groups.ts    # `workflow-groups` (CRUD)
+    └── secret-contexts.ts    # `secret-contexts` (CRUD + delete-key)
 ```

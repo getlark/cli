@@ -1,9 +1,9 @@
 {
   "name": "@getlark/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "getlark CLI - Invoke testing workflows and manage test executions",
-  "license": "ISC",
-  "author": "",
+  "license": "MIT",
+  "author": "getlark",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
