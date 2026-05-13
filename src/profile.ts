@@ -74,6 +74,16 @@ export function getProfile(profileName?: string): {
     }
     return null;
   }
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    typeof (data as ProfileData).api_key !== "string" ||
+    (data as ProfileData).api_key === ""
+  ) {
+    throw new Error(
+      `Profile "${name}" in ${CONFIG_PATH} is malformed: missing or invalid "api_key".`,
+    );
+  }
   return { name, data };
 }
 
