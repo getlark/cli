@@ -19,6 +19,7 @@ export function registerRepairsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -52,6 +53,7 @@ export function registerRepairsCommand(
         const config = getConfig({
           apiKey: opts.apiKey,
           apiUrl: opts.apiUrl,
+          profile: opts.profile,
         });
         const client = new LarkCIClient(config);
 
@@ -80,6 +82,7 @@ export function registerRepairsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -104,6 +107,7 @@ export function registerRepairsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -131,6 +135,7 @@ export function registerRepairsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 

@@ -17,6 +17,7 @@ export function registerSecretContextsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -40,6 +41,7 @@ export function registerSecretContextsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -73,6 +75,7 @@ export function registerSecretContextsCommand(
         const config = getConfig({
           apiKey: opts.apiKey,
           apiUrl: opts.apiUrl,
+          profile: opts.profile,
         });
         const client = new LarkCIClient(config);
 
@@ -120,6 +123,7 @@ export function registerSecretContextsCommand(
         const config = getConfig({
           apiKey: opts.apiKey,
           apiUrl: opts.apiUrl,
+          profile: opts.profile,
         });
         const client = new LarkCIClient(config);
 
@@ -150,6 +154,7 @@ export function registerSecretContextsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
@@ -174,6 +179,7 @@ export function registerSecretContextsCommand(
       const config = getConfig({
         apiKey: opts.apiKey,
         apiUrl: opts.apiUrl,
+        profile: opts.profile,
       });
       const client = new LarkCIClient(config);
 
