@@ -24,3 +24,6 @@ Thumbs.db
 
 # LARK OpenAPI specification
 larkci_openapi.json
+
+# Local testing / sample inputs (not committed)
+local-testing/
