@@ -14,6 +14,7 @@ import { registerGenerationsCommand } from "./commands/generations.js";
 import { registerEventsCommand } from "./commands/events.js";
 import { registerSecretContextsCommand } from "./commands/secret-contexts.js";
 import { registerWorkflowGroupsCommand } from "./commands/workflow-groups.js";
+import { registerJobsCommand } from "./commands/jobs.js";
 import { registerLoginCommand } from "./commands/login.js";
 import { registerLogoutCommand } from "./commands/logout.js";
 import { registerConfigCommand } from "./commands/config.js";
@@ -59,6 +60,7 @@ registerEventsCommand(workflows, program);
 
 registerSecretContextsCommand(program);
 registerWorkflowGroupsCommand(program);
+registerJobsCommand(program);
 
 registerLoginCommand(program);
 registerLogoutCommand(program);

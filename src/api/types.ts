@@ -173,3 +173,60 @@ export interface ListWorkflowGroupsResponse {
   workflow_groups: WorkflowGroupResource[];
   has_more: boolean;
 }
+
+export type JobType = "workflow_import";
+
+export type JobStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface JobResource {
+  id: string;
+  type: JobType;
+  name: string;
+  status: JobStatus;
+  input_type: "inline_json" | "uploaded_json";
+  input_filename: string | null;
+  error_message: string | null;
+  input?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListJobsResponse {
+  jobs: JobResource[];
+  has_more: boolean;
+}
+
+export interface WorkflowImportWorkflowInput {
+  name: string;
+  description: string;
+  mode: "ai_driven" | "deterministic";
+  secret_contexts?: string[] | null;
+  group_id?: string | null;
+}
+
+export interface WorkflowImportInput {
+  workflows: WorkflowImportWorkflowInput[];
+}
+
+export interface CreateJobRequest {
+  type: "workflow_import";
+  name: string;
+  input: WorkflowImportInput;
+}
+
+export interface JobValidationMessage {
+  path: string;
+  code: string;
+  message: string;
+}
+
+export interface JobValidationReport {
+  valid: boolean;
+  type: "workflow_import";
+  errors: JobValidationMessage[];
+}
