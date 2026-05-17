@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import type { Command } from "commander";
-import { LarkCIClient } from "../api/client.js";
+import { GetLarkClient } from "../api/client.js";
 import { getConfig } from "../config.js";
 import type { JobStatus, WorkflowImportInput } from "../api/types.js";
 
@@ -98,7 +98,7 @@ export function registerJobsCommand(program: Command): void {
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         const type = validateJobType(cmdOpts.type);
         const input = readJsonFile(cmdOpts.inputFile) as WorkflowImportInput;
@@ -142,7 +142,7 @@ export function registerJobsCommand(program: Command): void {
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         const statuses = validateStatuses(cmdOpts.status);
 
@@ -173,7 +173,7 @@ export function registerJobsCommand(program: Command): void {
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.getJob(jobId);
@@ -197,7 +197,7 @@ export function registerJobsCommand(program: Command): void {
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       try {
         const result = await client.cancelJob(jobId);
@@ -230,7 +230,7 @@ export function registerJobsCommand(program: Command): void {
           apiUrl: opts.apiUrl,
           profile: opts.profile,
         });
-        const client = new LarkCIClient(config);
+        const client = new GetLarkClient(config);
 
         const type = validateJobType(cmdOpts.type);
         ensureFileExists(cmdOpts.file);
@@ -269,7 +269,7 @@ export function registerJobsCommand(program: Command): void {
         apiUrl: opts.apiUrl,
         profile: opts.profile,
       });
-      const client = new LarkCIClient(config);
+      const client = new GetLarkClient(config);
 
       const type = validateJobType(cmdOpts.type);
       ensureFileExists(cmdOpts.file);

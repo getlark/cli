@@ -192,6 +192,7 @@ export interface JobResource {
   input_filename: string | null;
   error_message: string | null;
   input?: Record<string, unknown> | null;
+  dashboard_url: string;
   created_at: string;
   updated_at: string;
 }
