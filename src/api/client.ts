@@ -1,6 +1,14 @@
+import { readFileSync } from "node:fs";
+import { basename } from "node:path";
+import { Blob } from "node:buffer";
 import type { Config } from "../config.js";
 import type {
+  CreateJobRequest,
   GetSecretContextResponse,
+  JobResource,
+  JobStatus,
+  JobValidationReport,
+  ListJobsResponse,
   ListSecretContextsResponse,
   ListWorkflowEventsResponse,
   ListWorkflowGroupsResponse,
@@ -50,7 +58,10 @@ export class GetLarkClient {
     };
     const init: RequestInit = { method, headers };
 
-    if (body !== undefined) {
+    if (body instanceof FormData) {
+      // Let fetch set the multipart Content-Type with boundary automatically.
+      init.body = body;
+    } else if (body !== undefined) {
       headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(body);
     }
@@ -83,14 +94,40 @@ export class GetLarkClient {
 
   private buildQueryPath(
     basePath: string,
-    params: Record<string, string | number | undefined>,
+    params: Record<
+      string,
+      string | number | undefined | ReadonlyArray<string | number>
+    >,
   ): string {
     const qs = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined) qs.set(key, String(value));
+      if (value === undefined) continue;
+      if (Array.isArray(value)) {
+        for (const item of value) qs.append(key, String(item));
+      } else {
+        qs.set(key, String(value));
+      }
     }
     const query = qs.toString();
     return query ? `${basePath}?${query}` : basePath;
+  }
+
+  private buildFileFormData(
+    fields: Record<string, string>,
+    filePath: string,
+    fileFieldName = "file",
+  ): FormData {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(fields)) {
+      form.append(key, value);
+    }
+    const buf = readFileSync(filePath);
+    // Wrap the buffer in a Blob so undici's FormData encodes it as a file part.
+    // Cast through `unknown` because Node's `Blob` from `node:buffer` is
+    // structurally compatible with the global `Blob` expected by FormData.
+    const blob = new Blob([buf]) as unknown as globalThis.Blob;
+    form.append(fileFieldName, blob, basename(filePath));
+    return form;
   }
 
   // ── Workflows ──────────────────────────────────────────────
@@ -373,6 +410,66 @@ export class GetLarkClient {
     await this.request<unknown>(
       "DELETE",
       `/workflow-groups/${groupId}`,
+    );
+  }
+
+  // ── Jobs ───────────────────────────────────────────────────
+
+  async createJob(body: CreateJobRequest): Promise<JobResource> {
+    return this.request<JobResource>("POST", "/jobs", body);
+  }
+
+  async listJobs(options?: {
+    limit?: number;
+    offset?: number;
+    status?: JobStatus[];
+  }): Promise<ListJobsResponse> {
+    const path = this.buildQueryPath("/jobs", {
+      limit: options?.limit,
+      offset: options?.offset,
+      status: options?.status,
+    });
+    return this.request<ListJobsResponse>("GET", path);
+  }
+
+  async getJob(jobId: string): Promise<JobResource> {
+    return this.request<JobResource>(
+      "GET",
+      `/jobs/${encodeURIComponent(jobId)}`,
+    );
+  }
+
+  async cancelJob(jobId: string): Promise<JobResource> {
+    return this.request<JobResource>(
+      "POST",
+      `/jobs/${encodeURIComponent(jobId)}/cancel`,
+    );
+  }
+
+  async uploadJob(options: {
+    type: "workflow_import";
+    name: string;
+    filePath: string;
+  }): Promise<JobResource> {
+    const form = this.buildFileFormData(
+      { type: options.type, name: options.name },
+      options.filePath,
+    );
+    return this.request<JobResource>("POST", "/jobs/upload", form);
+  }
+
+  async validateUploadJob(options: {
+    type: "workflow_import";
+    filePath: string;
+  }): Promise<JobValidationReport> {
+    const form = this.buildFileFormData(
+      { type: options.type },
+      options.filePath,
+    );
+    return this.request<JobValidationReport>(
+      "POST",
+      "/jobs/upload/validate",
+      form,
     );
   }
 

@@ -15,6 +15,7 @@ Command-line interface for creating, invoking, and managing [getlark](https://ge
   - [workflows generations](#workflows-generations-cancel--cancel-a-running-generation) — cancel
   - [workflows events](#workflows-events-list--list-workflow-events) — list
   - [workflow-groups](#workflow-groups-create--create-a-workflow-group) — create, list, get, update, delete
+  - [jobs](#jobs-create--create-a-job-from-an-inline-json-input-file) — create, list, get, cancel, upload, validate
   - [secret-contexts](#secret-contexts-list--list-secret-contexts) — list, get, create, update, delete, delete-key
   - [Examples](#examples)
 - [Contributing](#contributing)
@@ -355,6 +356,116 @@ getlark workflow-groups delete <group_id>
 ```
 
 Workflows in the group become ungrouped.
+
+#### `jobs create` — Create a job from an inline JSON input file
+
+```bash
+larkci jobs create --name "Import workflows" --input-file ./workflows.json
+```
+
+| Flag                   | Required | Description                                                            | Default            |
+| ---------------------- | -------- | ---------------------------------------------------------------------- | ------------------ |
+| `--name <name>`        | Yes      | Human-readable name for the job                                        |                    |
+| `--input-file <path>`  | Yes      | Path to a JSON file with the job input (see schema below)              |                    |
+| `--type <type>`        | No       | Job type. Currently only `workflow_import` is supported.               | `workflow_import`  |
+
+##### `workflow_import` input file schema
+
+The input file is a single JSON object. The same file is accepted by `jobs create`, `jobs upload`, and `jobs validate`.
+
+Top-level object:
+
+| Field         | Type                       | Required | Description                                                          |
+| ------------- | -------------------------- | -------- | -------------------------------------------------------------------- |
+| `workflows`   | array of workflow entries  | Yes      | One or more workflows to import. Must contain at least one entry.    |
+
+Each entry under `workflows`:
+
+| Field              | Type                                  | Required | Description                                                                                          |
+| ------------------ | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| `name`             | string (non-empty)                    | Yes      | Workflow name.                                                                                       |
+| `description`      | string (non-empty)                    | Yes      | Workflow description; the AI agent reads this at runtime to perform the test.                        |
+| `mode`             | `"ai_driven"` \| `"deterministic"`    | Yes      | Execution mode for the workflow.                                                                     |
+| `secret_contexts`  | array of unique strings \| `null`     | No       | Secret context names the workflow may use. Omit or set `null` for no secret contexts.                |
+| `group_id`         | string \| `null`                      | No       | ID of the workflow group to assign the workflow to. Omit or set `null` to leave it ungrouped.        |
+
+No additional properties are accepted at the top level or per workflow.
+
+Example `workflows.json`:
+
+```json
+{
+  "workflows": [
+    {
+      "name": "Checkout smoke",
+      "description": "Verify checkout works end-to-end with a test card.",
+      "mode": "ai_driven",
+      "secret_contexts": ["staging"],
+      "group_id": "wgrp_01h..."
+    },
+    {
+      "name": "Login regression",
+      "description": "Log in with seeded credentials and confirm the dashboard loads.",
+      "mode": "deterministic"
+    }
+  ]
+}
+```
+
+Tip: run `larkci jobs validate --file ./workflows.json` before submitting to catch schema errors without creating a job.
+
+#### `jobs list` — List jobs
+
+```bash
+larkci jobs list --status pending --status running
+```
+
+| Flag                  | Description                                                                                | Default |
+| --------------------- | ------------------------------------------------------------------------------------------ | ------- |
+| `--limit <number>`    | Max jobs to return (1–100)                                                                 | `20`    |
+| `--offset <number>`   | Number of jobs to skip                                                                     | `0`     |
+| `--status <status>`   | Filter by status (`pending`, `running`, `completed`, `failed`, `cancelled`); repeatable    |         |
+
+#### `jobs get` — Get a job
+
+```bash
+larkci jobs get <job_id>
+```
+
+#### `jobs cancel` — Cancel a job
+
+```bash
+larkci jobs cancel <job_id>
+```
+
+Cancels a pending or running job.
+
+#### `jobs upload` — Create a job by uploading an input file
+
+```bash
+larkci jobs upload --name "Import workflows" --file ./workflows.json
+```
+
+| Flag             | Required | Description                                                                            | Default            |
+| ---------------- | -------- | -------------------------------------------------------------------------------------- | ------------------ |
+| `--name <name>`  | Yes      | Human-readable name for the job                                                        |                    |
+| `--file <path>`  | Yes      | Path to the input file (same schema as [`jobs create`](#workflow_import-input-file-schema)) |                    |
+| `--type <type>`  | No       | Job type. Currently only `workflow_import` is supported.                               | `workflow_import`  |
+
+Sends the file as `multipart/form-data` to `/jobs/upload`. The job stores the original filename so you can retrieve it later from `larkci jobs get`.
+
+#### `jobs validate` — Validate an input file without creating a job
+
+```bash
+larkci jobs validate --file ./workflows.json
+```
+
+| Flag             | Required | Description                                                                            | Default            |
+| ---------------- | -------- | -------------------------------------------------------------------------------------- | ------------------ |
+| `--file <path>`  | Yes      | Path to the input file (same schema as [`jobs create`](#workflow_import-input-file-schema)) |                    |
+| `--type <type>`  | No       | Job type. Currently only `workflow_import` is supported.                               | `workflow_import`  |
+
+Prints the validation report and exits non-zero if `valid: false`.
 
 #### `secret-contexts list` — List secret contexts
 

@@ -1,6 +1,6 @@
 {
   "name": "@getlark/cli",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "getlark CLI - Invoke testing workflows and manage test executions",
   "license": "MIT",
   "repository": {
