@@ -1,0 +1,22 @@
+# Managed by Lark — propose new tests for each PR diff.
+# Docs: https://docs.getlark.ai/
+name: Lark — propose tests
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  id-token: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  propose-tests:
+    # Skip PRs from forks — they cannot mint OIDC tokens with our trusted audience.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getlark/lark-github-actions-app@v1
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
