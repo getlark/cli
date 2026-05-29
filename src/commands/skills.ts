@@ -20,7 +20,10 @@ export function registerSkillsCommand(program: Command): void {
 
       const child = spawn("npx", cmdArgs, {
         stdio: "inherit",
-        shell: false,
+        // On Windows npx resolves to npx.cmd, which spawn can't find with
+        // shell: false (ENOENT). cmdArgs are static, so using the shell on
+        // Windows is safe; keep shell: false everywhere else.
+        shell: process.platform === "win32",
       });
 
       child.on("error", (err) => {

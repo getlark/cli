@@ -8,6 +8,7 @@ import type {
   JobResource,
   JobStatus,
   JobValidationReport,
+  ListedWorkflowEventResource,
   ListJobsResponse,
   ListSecretContextsResponse,
   ListWorkflowEventsResponse,
@@ -584,8 +585,13 @@ export class GetLarkClient {
     const startTime = Date.now();
 
     const terminalStatuses = new Set(["success", "failure", "cancelled"]);
-    const failedAt = new Date(failedExecution.created_at).getTime();
     const at = (ts: string | null) => (ts ? new Date(ts).getTime() : 0);
+    // The repair chain only starts once the execution actually fails, so scope
+    // the event window to the failure time (stopped_at), falling back to
+    // created_at only if the execution never recorded a stop time. Using
+    // created_at would widen the window to when the execution was triggered and
+    // can pull in unrelated events for long-running executions.
+    const failedAt = at(failedExecution.stopped_at ?? failedExecution.created_at);
 
     let stage: RepairChainStage = "summarization";
 
@@ -603,8 +609,33 @@ export class GetLarkClient {
       const elapsedMs = Date.now() - startTime;
       await onPoll?.(stage, elapsedMs);
 
-      const summ = chain.find((e) => e.event_type === "summarization");
-      if (summ && terminalStatuses.has(summ.status)) {
+      // There may be several terminal summarization events in the window (e.g.
+      // a newer chain that raced ahead, or stale ones). The oldest is not
+      // necessarily ours, so consider every candidate and match on
+      // workflow_execution_id rather than acting on the first one we find — and
+      // verify ownership BEFORE branching on status, so a failed summarization
+      // belonging to a different execution can't wrongly fail our chain.
+      let summ: ListedWorkflowEventResource | undefined;
+      let detail: WorkflowSummarizationResource | undefined;
+      for (const candidate of chain) {
+        if (
+          candidate.event_type !== "summarization" ||
+          !terminalStatuses.has(candidate.status)
+        ) {
+          continue;
+        }
+        const candidateDetail = await this.getWorkflowSummarization(
+          workflowId,
+          candidate.id,
+        );
+        if (candidateDetail.workflow_execution_id === failedExecution.id) {
+          summ = candidate;
+          detail = candidateDetail;
+          break;
+        }
+      }
+      // If we found OUR summarization, branch on its status.
+      if (summ && detail) {
         if (summ.status !== "success") {
           return {
             result: "failure",
@@ -612,18 +643,6 @@ export class GetLarkClient {
             executionId: failedExecution.id,
             summary: null,
           };
-        }
-        const detail = await this.getWorkflowSummarization(workflowId, summ.id);
-        // Make sure this summarization is the one for our failed execution and
-        // not a newer one that raced ahead; if not, keep waiting for ours.
-        if (detail.workflow_execution_id !== failedExecution.id) {
-          if (elapsedMs >= timeoutMs) {
-            throw new TimeoutError(
-              `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for repair of execution ${failedExecution.id} (stage: ${stage})`,
-            );
-          }
-          await this.sleep(pollIntervalMs);
-          continue;
         }
         if (detail.category === "app_issue") {
           return {
@@ -667,11 +686,18 @@ export class GetLarkClient {
                 summary: detail.summary,
               };
             }
+            // Surface the re-execution's OWN failure summary rather than the
+            // summarization's repair-suggestion text, which describes the
+            // original failure and is misleading for a re-execution failure.
+            const reExecutionDetail = await this.getWorkflowExecution(
+              workflowId,
+              reExecution.id,
+            );
             return {
               result: "failure",
               reason: "reexecution_failed",
               executionId: reExecution.id,
-              summary: detail.summary,
+              summary: reExecutionDetail.summary,
             };
           }
         }

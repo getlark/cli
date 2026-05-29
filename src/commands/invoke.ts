@@ -358,40 +358,17 @@ export function registerInvokeCommand(
             ),
           );
 
-          let timeoutPromise: Promise<void> | undefined;
-          if (cmdOpts.timeout) {
-            timeoutPromise = new Promise((resolve) => {
-              setTimeout(
-                () => {
-                  resolve();
-                },
-                parseInt(cmdOpts.timeout!, 10) * 1000,
-              );
-            });
-          }
-
-          let workflowExecutionResults: PromiseSettledResult<WorkflowOutcome>[] =
-            [];
-          if (timeoutPromise) {
-            const result = await Promise.race([
-              Promise.allSettled(workflowExecutionPromises),
-              timeoutPromise,
-            ]);
-            if (!result) {
-              console.error(
-                "Timed out waiting for workflow executions to complete",
-              );
-              process.exit(2);
-            }
-            workflowExecutionResults = result;
-          } else {
-            workflowExecutionResults = await Promise.allSettled(
-              workflowExecutionPromises,
-            );
-          }
+          // The per-execution deadline inside invokeWorkflow is authoritative
+          // and throws TimeoutError regardless of whether --timeout was passed,
+          // so there's no need for an outer race here.
+          const workflowExecutionResults = await Promise.allSettled(
+            workflowExecutionPromises,
+          );
 
           const failedWorkflowIds: string[] = [];
           const cancelledWorkflowIds: string[] = [];
+          let timedOut = false;
+          let unexpectedError = false;
           for (const result of workflowExecutionResults) {
             if (result.status === "fulfilled") {
               const outcome = result.value;
@@ -420,8 +397,20 @@ export function registerInvokeCommand(
                 cancelledWorkflowIds.push(outcome.workflowId);
               }
             } else {
+              if (result.reason instanceof TimeoutError) {
+                timedOut = true;
+              } else {
+                unexpectedError = true;
+              }
               console.error(`Error: ${result.reason}`);
             }
+          }
+
+          // A timeout takes priority over other outcomes: the documented
+          // contract is exit code 2, and without this a timed-out --wait run
+          // would otherwise fall through to exit 0.
+          if (timedOut) {
+            process.exit(2);
           }
 
           if (cancelledWorkflowIds.length > 0) {
@@ -439,6 +428,12 @@ export function registerInvokeCommand(
 
           if (cancelledWorkflowIds.length > 0) {
             process.exit(1);
+          }
+
+          // A non-timeout rejection is an unexpected error; don't let it pass
+          // silently as success.
+          if (unexpectedError) {
+            process.exit(3);
           }
 
           process.exit(0);
