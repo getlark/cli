@@ -33,6 +33,10 @@ export interface WorkflowResource {
   last_repair_started_at: string | null;
   last_repair_stopped_at: string | null;
   last_repair_result_type: "success" | "failure" | "cancelled" | null;
+  last_summarization_id: string | null;
+  last_summarization_started_at: string | null;
+  last_summarization_stopped_at: string | null;
+  last_summarization_result_type: "success" | "failure" | "cancelled" | null;
   schedule: string | null;
   group_id: string | null;
   next_execution_at: string | null;
@@ -63,7 +67,8 @@ export interface WorkflowArtifactResource {
     | "video"
     | "javascript"
     | "python"
-    | "shellscript";
+    | "shellscript"
+    | "other";
   filename: string;
   presigned_url: string;
   presigned_url_expires_at: string;
@@ -130,6 +135,24 @@ export interface WorkflowRepairResource {
   updated_at: string;
 }
 
+export interface WorkflowSummarizationResource {
+  id: string;
+  workflow_id: string;
+  workflow_execution_id: string;
+  status: "pending" | "running" | "success" | "failure" | "cancelled";
+  // "app_issue" means the failure is a genuine defect in the app under test;
+  // any other category (e.g. "test_issue") indicates a test-side issue that
+  // an auto-repair may be able to fix.
+  category: "test_issue" | "app_issue";
+  started_at: string | null;
+  stopped_at: string | null;
+  summary: string | null;
+  secret_contexts: string[] | null;
+  artifacts: WorkflowArtifactResource[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ListedWorkflowRepairResource {
   id: string;
   workflow_id: string;
@@ -149,7 +172,7 @@ export interface ListWorkflowRepairsResponse {
 export interface ListedWorkflowEventResource {
   id: string;
   workflow_id: string;
-  event_type: "generation" | "execution" | "repair";
+  event_type: "generation" | "execution" | "repair" | "summarization";
   status: "pending" | "running" | "success" | "failure" | "cancelled";
   started_at: string | null;
   stopped_at: string | null;
@@ -172,6 +195,13 @@ export interface WorkflowGroupResource {
 export interface ListWorkflowGroupsResponse {
   workflow_groups: WorkflowGroupResource[];
   has_more: boolean;
+}
+
+export interface SettingsResource {
+  tasks_enabled: boolean;
+  deterministic_workflow_enabled: boolean;
+  auto_repair_deterministic_workflows_enabled: boolean;
+  qa_report_enabled: boolean;
 }
 
 export type JobType = "workflow_import";

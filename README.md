@@ -83,11 +83,26 @@ Lark ships [Agent Skills](https://docs.getlark.ai/agents) that teach Claude Code
 npx skills add getlark/skills
 ```
 
+Or, equivalently, via the `getlark` CLI:
+
+```bash
+getlark skills install
+```
+
 Then ask the agent to run the `setup` skill. See the [Agents docs](https://docs.getlark.ai/agents) for the full skill catalog and the opt-in `PostToolUse` hook that validates your branch after every `git commit` or `git push`.
 
 ## CI Pipeline Usage
 
 The `--wait` flag makes it easy to use in CI pipelines. The command will block until the workflow completes and exit with a non-zero code on failure.
+
+If your account has auto-repair enabled for deterministic workflows, a failed execution is not counted as a failure right away. Instead `--wait` follows the repair chain before deciding the exit code:
+
+- If the failure summarization classifies it as an **app issue**, the workflow **fails**.
+- If the repair job itself **fails**, the workflow **fails**.
+- If the repair succeeds and the automatic re-run **passes**, the workflow **passes** (the test self-healed) and is reported as auto-repaired.
+- If the repair succeeds but the re-run **fails**, the workflow **fails**.
+
+Workflows in `ai_driven` mode, and accounts without auto-repair enabled, keep the previous fail-fast behavior. The `--timeout` covers the whole wait, including any repair chain.
 
 ### GitHub Actions Example
 
@@ -230,8 +245,8 @@ getlark workflows invoke --group-name "Checkout Flow" --wait
 | `--all`                    | Invoke all workflows                                                             |
 | `--group-id <groupId>`     | Invoke all workflows in a group (by group ID)                                    |
 | `--group-name <groupName>` | Invoke all workflows in a group (by group name)                                  |
-| `--wait`                   | Wait for the execution to finish (successfully or unsuccessfully) before exiting |
-| `--timeout <seconds>`      | Maximum time to wait in seconds (default: 600, requires `--wait`)                |
+| `--wait`                   | Wait for the execution to finish before exiting. When auto-repair is enabled, also waits out the repair chain for failed deterministic workflows (see [CI Pipeline Usage](#ci-pipeline-usage)) |
+| `--timeout <seconds>`      | Maximum time to wait in seconds (default: 600, requires `--wait`); covers the repair chain too |
 | `--verbose`                | Print verbose output (includes logs)                                             |
 
 One of `--workflow-ids`, `--all`, `--group-id`, or `--group-name` is required.

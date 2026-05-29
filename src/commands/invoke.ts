@@ -2,10 +2,24 @@ import { Option, type Command } from "commander";
 import { GetLarkClient, TimeoutError } from "../api/client.js";
 import { getConfig } from "../config.js";
 import type {
-  WorkflowExecutionResource,
   WorkflowResource,
   WorkflowGroupResource,
 } from "../api/types.js";
+
+/**
+ * The resolved result of invoking a single workflow, including the verdict of
+ * the auto-repair chain when a failed execution was given the chance to heal.
+ */
+interface WorkflowOutcome {
+  workflowId: string;
+  executionId: string;
+  result: "pending" | "running" | "success" | "failure" | "cancelled";
+  /** The execution failed but was auto-repaired and passed on re-run. */
+  repaired: boolean;
+  /** Summarization classified the failure as a genuine app defect. */
+  appIssue: boolean;
+  summary: string | null;
+}
 
 const PAGE_SIZE = 100;
 
@@ -70,19 +84,30 @@ async function invokeWorkflow(
   wait: boolean,
   timeoutSeconds: number,
   verbose: boolean,
-): Promise<WorkflowExecutionResource> {
+  autoRepairEnabled: boolean,
+): Promise<WorkflowOutcome> {
   const execution = await client.invokeWorkflow(workflowId);
   if (!wait) {
-    return execution;
+    return {
+      workflowId,
+      executionId: execution.id,
+      result: execution.status,
+      repaired: false,
+      appIssue: false,
+      summary: execution.summary,
+    };
   }
 
+  // A single deadline covers the whole wait — the execution plus, if it fails,
+  // the auto-repair chain that may follow.
+  const deadline = Date.now() + timeoutSeconds * 1000;
   let logOffset = 0;
 
   const finalExecution = await client.pollWorkflowExecution(
     workflowId,
     execution.id,
     {
-      timeoutMs: timeoutSeconds * 1000,
+      timeoutMs: deadline - Date.now(),
       pollIntervalMs: POLL_INTERVAL_MS,
       onPoll: async (exec, elapsedMs) => {
         if (!verbose) {
@@ -113,7 +138,74 @@ async function invokeWorkflow(
     },
   );
 
-  return finalExecution;
+  const outcome: WorkflowOutcome = {
+    workflowId,
+    executionId: finalExecution.id,
+    result: finalExecution.status,
+    repaired: false,
+    appIssue: false,
+    summary: finalExecution.summary,
+  };
+
+  if (finalExecution.status !== "failure") {
+    return outcome;
+  }
+
+  // The execution failed. Unless the account has auto-repair enabled, a failure
+  // is final — preserve the original fail-fast behavior.
+  if (!autoRepairEnabled) {
+    return outcome;
+  }
+
+  // Auto-repair only applies to deterministic workflows, so fail immediately
+  // for AI-driven ones rather than waiting for a repair that never comes.
+  const workflow = await client.getWorkflow(workflowId);
+  if (workflow.mode !== "deterministic") {
+    return outcome;
+  }
+
+  // If execution polling already consumed the deadline, treat the failure as
+  // final rather than entering the repair chain only to time out immediately.
+  const remainingMs = deadline - Date.now();
+  if (remainingMs <= 0) {
+    return outcome;
+  }
+
+  if (verbose) {
+    logForWorkflow(
+      workflowId,
+      "Execution failed; waiting for summarization/auto-repair to settle...",
+    );
+  }
+
+  const verdict = await client.pollWorkflowRepairChain(
+    workflowId,
+    finalExecution,
+    {
+      timeoutMs: remainingMs,
+      pollIntervalMs: POLL_INTERVAL_MS,
+      onPoll: (stage, elapsedMs) => {
+        if (!verbose) {
+          return;
+        }
+        logForWorkflow(
+          workflowId,
+          "Repair stage: %s (%s elapsed)",
+          stage,
+          formatElapsed(elapsedMs),
+        );
+      },
+    },
+  );
+
+  return {
+    workflowId,
+    executionId: verdict.executionId,
+    result: verdict.result,
+    repaired: verdict.result === "success",
+    appIssue: verdict.reason === "app_issue",
+    summary: verdict.summary ?? finalExecution.summary,
+  };
 }
 
 export function registerInvokeCommand(
@@ -235,6 +327,26 @@ export function registerInvokeCommand(
             process.exit(3);
           }
 
+          // When waiting, a failed execution may be auto-repaired before it
+          // counts as a real failure. Check the account setting once up front;
+          // if it can't be read, fall back to fail-fast behavior.
+          let autoRepairEnabled = false;
+          if (cmdOpts.wait) {
+            try {
+              const settings = await client.getSettings();
+              autoRepairEnabled =
+                settings.auto_repair_deterministic_workflows_enabled;
+            } catch (err) {
+              if (verbose) {
+                const message =
+                  err instanceof Error ? err.message : String(err);
+                console.error(
+                  `Warning: could not read settings (${message}); treating failures as final.`,
+                );
+              }
+            }
+          }
+
           const workflowExecutionPromises = workflowIds.map((workflowId) =>
             invokeWorkflow(
               client,
@@ -242,63 +354,63 @@ export function registerInvokeCommand(
               cmdOpts.wait ?? false,
               timeoutSeconds,
               verbose,
+              autoRepairEnabled,
             ),
           );
 
-          let timeoutPromise: Promise<void> | undefined;
-          if (cmdOpts.timeout) {
-            timeoutPromise = new Promise((resolve) => {
-              setTimeout(
-                () => {
-                  resolve();
-                },
-                parseInt(cmdOpts.timeout!, 10) * 1000,
-              );
-            });
-          }
-
-          let workflowExecutionResults: PromiseSettledResult<WorkflowExecutionResource>[] =
-            [];
-          if (timeoutPromise) {
-            const result = await Promise.race([
-              Promise.allSettled(workflowExecutionPromises),
-              timeoutPromise,
-            ]);
-            if (!result) {
-              console.error(
-                "Timed out waiting for workflow executions to complete",
-              );
-              process.exit(2);
-            }
-            workflowExecutionResults = result;
-          } else {
-            workflowExecutionResults = await Promise.allSettled(
-              workflowExecutionPromises,
-            );
-          }
+          // The per-execution deadline inside invokeWorkflow is authoritative
+          // and throws TimeoutError regardless of whether --timeout was passed,
+          // so there's no need for an outer race here.
+          const workflowExecutionResults = await Promise.allSettled(
+            workflowExecutionPromises,
+          );
 
           const failedWorkflowIds: string[] = [];
           const cancelledWorkflowIds: string[] = [];
+          let timedOut = false;
+          let unexpectedError = false;
           for (const result of workflowExecutionResults) {
             if (result.status === "fulfilled") {
-              if (result.value.status === "success") {
-                console.log(
-                  `Workflow ${result.value.workflow_id} executed successfully. Execution ID: ${result.value.id}`,
-                );
-              } else if (result.value.status === "failure") {
+              const outcome = result.value;
+              if (outcome.result === "success") {
+                if (outcome.repaired) {
+                  console.log(
+                    `Workflow ${outcome.workflowId} failed but was auto-repaired and passed on re-run. Execution ID: ${outcome.executionId}`,
+                  );
+                } else {
+                  console.log(
+                    `Workflow ${outcome.workflowId} executed successfully. Execution ID: ${outcome.executionId}`,
+                  );
+                }
+              } else if (outcome.result === "failure") {
+                const label = outcome.appIssue
+                  ? "executed with failure (app issue)"
+                  : "executed with failure";
                 console.error(
-                  `Workflow ${result.value.workflow_id} executed with failure. Execution ID: ${result.value.id}. Summary: ${result.value.summary}`,
+                  `Workflow ${outcome.workflowId} ${label}. Execution ID: ${outcome.executionId}. Summary: ${outcome.summary}`,
                 );
-                failedWorkflowIds.push(result.value.workflow_id);
-              } else if (result.value.status === "cancelled") {
+                failedWorkflowIds.push(outcome.workflowId);
+              } else if (outcome.result === "cancelled") {
                 console.error(
-                  `Workflow ${result.value.workflow_id} was cancelled. Execution ID: ${result.value.id}`,
+                  `Workflow ${outcome.workflowId} was cancelled. Execution ID: ${outcome.executionId}`,
                 );
-                cancelledWorkflowIds.push(result.value.workflow_id);
+                cancelledWorkflowIds.push(outcome.workflowId);
               }
             } else {
+              if (result.reason instanceof TimeoutError) {
+                timedOut = true;
+              } else {
+                unexpectedError = true;
+              }
               console.error(`Error: ${result.reason}`);
             }
+          }
+
+          // A timeout takes priority over other outcomes: the documented
+          // contract is exit code 2, and without this a timed-out --wait run
+          // would otherwise fall through to exit 0.
+          if (timedOut) {
+            process.exit(2);
           }
 
           if (cancelledWorkflowIds.length > 0) {
@@ -316,6 +428,12 @@ export function registerInvokeCommand(
 
           if (cancelledWorkflowIds.length > 0) {
             process.exit(1);
+          }
+
+          // A non-timeout rejection is an unexpected error; don't let it pass
+          // silently as success.
+          if (unexpectedError) {
+            process.exit(3);
           }
 
           process.exit(0);

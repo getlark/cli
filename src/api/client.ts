@@ -8,17 +8,20 @@ import type {
   JobResource,
   JobStatus,
   JobValidationReport,
+  ListedWorkflowEventResource,
   ListJobsResponse,
   ListSecretContextsResponse,
   ListWorkflowEventsResponse,
   ListWorkflowGroupsResponse,
   ListWorkflowRepairsResponse,
   ListWorkflowsResponse,
+  SettingsResource,
   WorkflowExecutionResource,
   WorkflowGenerationResource,
   WorkflowGroupResource,
   WorkflowRepairResource,
   WorkflowResource,
+  WorkflowSummarizationResource,
 } from "./types.js";
 
 export class TimeoutError extends Error {
@@ -36,6 +39,38 @@ export interface PollOptions {
     elapsedMs: number,
   ) => void | Promise<void>;
 }
+
+/** The stage of the post-failure repair chain currently being awaited. */
+export type RepairChainStage = "summarization" | "repair" | "re-execution";
+
+export interface RepairChainPollOptions {
+  timeoutMs: number;
+  pollIntervalMs: number;
+  onPoll?: (stage: RepairChainStage, elapsedMs: number) => void | Promise<void>;
+}
+
+/**
+ * The verdict of waiting out the auto-repair chain that follows a failed
+ * execution. `repaired` means the test self-healed (repair succeeded and the
+ * re-run passed); every `failure` reason counts as a genuine failure.
+ */
+export type RepairChainOutcome =
+  | {
+      result: "success";
+      reason: "repaired";
+      executionId: string;
+      summary: string | null;
+    }
+  | {
+      result: "failure";
+      reason:
+        | "app_issue"
+        | "summarization_failed"
+        | "repair_failed"
+        | "reexecution_failed";
+      executionId: string;
+      summary: string | null;
+    };
 
 export class GetLarkClient {
   private baseUrl: string;
@@ -312,6 +347,24 @@ export class GetLarkClient {
     return this.request<ListWorkflowEventsResponse>("GET", path);
   }
 
+  // ── Summarizations ─────────────────────────────────────────
+
+  async getWorkflowSummarization(
+    workflowId: string,
+    summarizationId: string,
+  ): Promise<WorkflowSummarizationResource> {
+    return this.request<WorkflowSummarizationResource>(
+      "GET",
+      `/workflows/${workflowId}/summarizations/${summarizationId}`,
+    );
+  }
+
+  // ── Settings ───────────────────────────────────────────────
+
+  async getSettings(): Promise<SettingsResource> {
+    return this.request<SettingsResource>("GET", "/settings");
+  }
+
   // ── Secret Contexts ────────────────────────────────────────
 
   async listSecretContexts(): Promise<ListSecretContextsResponse> {
@@ -475,6 +528,10 @@ export class GetLarkClient {
 
   // ── Polling ────────────────────────────────────────────────
 
+  private sleep(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+  }
+
   async pollWorkflowExecution(
     workflowId: string,
     executionId: string,
@@ -482,9 +539,6 @@ export class GetLarkClient {
   ): Promise<WorkflowExecutionResource> {
     const { timeoutMs, pollIntervalMs, onPoll } = options;
     const startTime = Date.now();
-
-    const sleep = (ms: number) =>
-      new Promise<void>((resolve) => setTimeout(resolve, ms));
 
     const terminalStatuses = new Set(["success", "failure", "cancelled"]);
 
@@ -507,7 +561,155 @@ export class GetLarkClient {
         );
       }
 
-      await sleep(pollIntervalMs);
+      await this.sleep(pollIntervalMs);
+    }
+  }
+
+  /**
+   * After an execution fails, an account with auto-repair enabled will run a
+   * summarization, an optional repair, and a follow-up re-execution. This
+   * follows that chain via the workflow event timeline and returns a verdict:
+   *
+   *   summarization "app_issue"        → failure (genuine app defect)
+   *   summarization not successful     → failure (inconclusive)
+   *   repair not successful            → failure
+   *   re-execution failure             → failure
+   *   re-execution success             → success (test self-healed)
+   */
+  async pollWorkflowRepairChain(
+    workflowId: string,
+    failedExecution: WorkflowExecutionResource,
+    options: RepairChainPollOptions,
+  ): Promise<RepairChainOutcome> {
+    const { timeoutMs, pollIntervalMs, onPoll } = options;
+    const startTime = Date.now();
+
+    const terminalStatuses = new Set(["success", "failure", "cancelled"]);
+    const at = (ts: string | null) => (ts ? new Date(ts).getTime() : 0);
+    // The repair chain only starts once the execution actually fails, so scope
+    // the event window to the failure time (stopped_at), falling back to
+    // created_at only if the execution never recorded a stop time. Using
+    // created_at would widen the window to when the execution was triggered and
+    // can pull in unrelated events for long-running executions.
+    const failedAt = at(failedExecution.stopped_at ?? failedExecution.created_at);
+
+    let stage: RepairChainStage = "summarization";
+
+    while (true) {
+      // Events are returned newest-first; reorder the events that belong to
+      // this failure (created after the failed execution) oldest-first so we
+      // can walk the chain in the order it happened.
+      const { workflow_events } = await this.listWorkflowEvents(workflowId, {
+        limit: 50,
+      });
+      const chain = workflow_events
+        .filter((e) => at(e.created_at) > failedAt)
+        .sort((a, b) => at(a.created_at) - at(b.created_at));
+
+      const elapsedMs = Date.now() - startTime;
+      await onPoll?.(stage, elapsedMs);
+
+      // There may be several terminal summarization events in the window (e.g.
+      // a newer chain that raced ahead, or stale ones). The oldest is not
+      // necessarily ours, so consider every candidate and match on
+      // workflow_execution_id rather than acting on the first one we find — and
+      // verify ownership BEFORE branching on status, so a failed summarization
+      // belonging to a different execution can't wrongly fail our chain.
+      let summ: ListedWorkflowEventResource | undefined;
+      let detail: WorkflowSummarizationResource | undefined;
+      for (const candidate of chain) {
+        if (
+          candidate.event_type !== "summarization" ||
+          !terminalStatuses.has(candidate.status)
+        ) {
+          continue;
+        }
+        const candidateDetail = await this.getWorkflowSummarization(
+          workflowId,
+          candidate.id,
+        );
+        if (candidateDetail.workflow_execution_id === failedExecution.id) {
+          summ = candidate;
+          detail = candidateDetail;
+          break;
+        }
+      }
+      // If we found OUR summarization, branch on its status.
+      if (summ && detail) {
+        if (summ.status !== "success") {
+          return {
+            result: "failure",
+            reason: "summarization_failed",
+            executionId: failedExecution.id,
+            summary: null,
+          };
+        }
+        if (detail.category === "app_issue") {
+          return {
+            result: "failure",
+            reason: "app_issue",
+            executionId: failedExecution.id,
+            summary: detail.summary,
+          };
+        }
+        // A test-side issue: an auto-repair should follow.
+        stage = "repair";
+
+        const repair = chain.find(
+          (e) =>
+            e.event_type === "repair" && at(e.created_at) >= at(summ.created_at),
+        );
+        if (repair && terminalStatuses.has(repair.status)) {
+          if (repair.status !== "success") {
+            return {
+              result: "failure",
+              reason: "repair_failed",
+              executionId: failedExecution.id,
+              summary: null,
+            };
+          }
+          // The repair succeeded; the backend re-runs the test.
+          stage = "re-execution";
+
+          const reExecution = chain.find(
+            (e) =>
+              e.event_type === "execution" &&
+              repair.stopped_at !== null &&
+              at(e.created_at) >= at(repair.stopped_at),
+          );
+          if (reExecution && terminalStatuses.has(reExecution.status)) {
+            if (reExecution.status === "success") {
+              return {
+                result: "success",
+                reason: "repaired",
+                executionId: reExecution.id,
+                summary: detail.summary,
+              };
+            }
+            // Surface the re-execution's OWN failure summary rather than the
+            // summarization's repair-suggestion text, which describes the
+            // original failure and is misleading for a re-execution failure.
+            const reExecutionDetail = await this.getWorkflowExecution(
+              workflowId,
+              reExecution.id,
+            );
+            return {
+              result: "failure",
+              reason: "reexecution_failed",
+              executionId: reExecution.id,
+              summary: reExecutionDetail.summary,
+            };
+          }
+        }
+      }
+
+      if (elapsedMs >= timeoutMs) {
+        throw new TimeoutError(
+          `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for repair of execution ${failedExecution.id} (stage: ${stage})`,
+        );
+      }
+
+      await this.sleep(pollIntervalMs);
     }
   }
 }
